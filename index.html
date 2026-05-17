@@ -528,32 +528,64 @@
   }, { threshold: 0.28 });
   panels.forEach(p => io.observe(p));
 
-  // ── Carousel ──
-  let carPos = 0;
+  // ── Infinite Carousel ──
   const track = document.getElementById('carousel-track');
-  function getCardW() {
-    const cards = track.querySelectorAll('.c-card');
-    if (!cards.length) return 0;
-    const wrap = document.getElementById('carousel-wrap');
-    const ww = wrap.offsetWidth;
-    return ww > 640 ? (ww / 2) + 10 : ww;
-  }
-  function carouselMove(dir) {
-    const cards = track.querySelectorAll('.c-card');
-    const max = cards.length - (window.innerWidth > 640 ? 2 : 1);
-    carPos = Math.max(0, Math.min(carPos + dir, max));
-    track.style.transform = `translateX(-${carPos * getCardW()}px)`;
-  }
-  function carouselNext() { carouselMove(1); }
-  function carouselPrev() { carouselMove(-1); }
 
-  // Auto-cycle carousel
-  setInterval(() => {
-    const cards = track.querySelectorAll('.c-card');
-    const max = cards.length - (window.innerWidth > 640 ? 2 : 1);
-    carPos = carPos >= max ? 0 : carPos + 1;
-    track.style.transform = `translateX(-${carPos * getCardW()}px)`;
-  }, 4000);
+  // Clone all cards and append — enables seamless infinite loop
+  function initCarousel() {
+    const origCards = [...track.querySelectorAll('.c-card')];
+    origCards.forEach(c => track.appendChild(c.cloneNode(true)));
+    origCards.forEach(c => track.prepend(c.cloneNode(true)));
+  }
+  initCarousel();
+
+  function getCardW() {
+    const wrap = document.getElementById('carousel-wrap');
+    return wrap.offsetWidth > 640 ? wrap.offsetWidth / 2 + 10 : wrap.offsetWidth;
+  }
+
+  // Start in middle of cloned set (after the prepended clones)
+  const origCount = 4; // number of real cards
+  let carIdx = origCount; // start after prepended clones
+  let isTransitioning = false;
+
+  function setPos(idx, animate) {
+    track.style.transition = animate ? 'transform 0.55s cubic-bezier(0.16,1,0.3,1)' : 'none';
+    track.style.transform = `translateX(-${idx * getCardW()}px)`;
+  }
+
+  // After transition: silently jump if on a clone
+  track.addEventListener('transitionend', () => {
+    isTransitioning = false;
+    const total = track.querySelectorAll('.c-card').length; // origCount * 3
+    if (carIdx <= origCount - 1) {
+      carIdx = carIdx + origCount;
+      setPos(carIdx, false);
+    } else if (carIdx >= origCount * 2) {
+      carIdx = carIdx - origCount;
+      setPos(carIdx, false);
+    }
+  });
+
+  function carouselNext() {
+    if (isTransitioning) return;
+    isTransitioning = true;
+    carIdx++;
+    setPos(carIdx, true);
+  }
+  function carouselPrev() {
+    if (isTransitioning) return;
+    isTransitioning = true;
+    carIdx--;
+    setPos(carIdx, true);
+  }
+
+  // Init position without animation
+  window.addEventListener('load', () => setPos(carIdx, false));
+  window.addEventListener('resize', () => setPos(carIdx, false));
+
+  // Auto-cycle every 4s
+  setInterval(carouselNext, 4000);
 </script>
 </body>
 </html>
