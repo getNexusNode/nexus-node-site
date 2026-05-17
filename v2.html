@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEXUS NODE — Know Your Network</title>
+  <meta name="description" content="Turn your contacts into a visual network you can actually use." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent:    #7c3aed;
+      --accent-lt: #a78bfa;
+      --accent-dim: rgba(124,58,237,0.15);
+      --bg:        #08080f;
+      --bg-card:   #10101a;
+      --border:    rgba(124,58,237,0.25);
+      --text:      #ece9f8;
+      --text-mut:  #8a87aa;
+      --text-dim:  #4a4768;
+    }
+    html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: 58px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      background: rgba(8,8,15,0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 9px;
+      font-size: 15px; font-weight: 900; letter-spacing: 3px;
+      color: var(--text); text-decoration: none;
+    }
+    .nav-logo img { width: 24px; height: 24px; border-radius: 6px; }
+    .nav-logo .hl { color: var(--accent-lt); }
+    .nav-buy {
+      background: var(--accent); color: #fff;
+      padding: 7px 20px; border-radius: 8px;
+      font-size: 13px; font-weight: 700; text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .nav-buy:hover { background: #6d28d9; transform: translateY(-1px); }
+
+    /* ── SCROLL INDICATOR ── */
+    .scroll-dots {
+      position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 10px; z-index: 100;
+    }
+    .sdot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-dim); cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+    .sdot.active { background: var(--accent-lt); transform: scale(1.5); }
+
+    /* ── SECTION BASE ── */
+    .panel {
+      min-height: 100vh;
+      scroll-snap-align: start;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      padding: 80px 24px 40px;
+      position: relative; overflow: hidden;
+    }
+
+    /* ── CYLINDER ANIMATION CLASSES ── */
+    .cyl-wrap {
+      width: 100%; max-width: 900px;
+      display: grid; gap: 48px;
+      align-items: center;
+      opacity: 0;
+      transform: perspective(1200px) rotateY(25deg) translateX(120px);
+      transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1),
+                  transform 0.9s cubic-bezier(0.16,1,0.3,1);
+    }
+    .cyl-wrap.visible {
+      opacity: 1;
+      transform: perspective(1200px) rotateY(0deg) translateX(0);
+    }
+    /* Alternate — from left */
+    .cyl-wrap.from-left {
+      transform: perspective(1200px) rotateY(-25deg) translateX(-120px);
+    }
+    .cyl-wrap.from-left.visible {
+      transform: perspective(1200px) rotateY(0deg) translateX(0);
+    }
+
+    /* Text fades in AFTER graphic — delayed */
+    .cyl-text {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.7s ease 0.45s, transform 0.7s ease 0.45s;
+    }
+    .cyl-wrap.visible .cyl-text {
+      opacity: 1; transform: translateY(0);
+    }
+
+    /* ── HERO PANEL ── */
+    .panel-hero {
+      background: radial-gradient(ellipse 90% 70% at 50% 0%,
+        rgba(124,58,237,0.2) 0%, transparent 65%);
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent-dim); border: 1px solid var(--border);
+      color: var(--accent-lt); font-size: 11px; font-weight: 700;
+      letter-spacing: 2px; padding: 5px 16px; border-radius: 99px;
+      margin-bottom: 32px; text-transform: uppercase;
+    }
+    .pulse-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent-lt);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.4; transform:scale(1.4); }
+    }
+    .hero-title {
+      font-size: clamp(38px, 7vw, 78px);
+      font-weight: 900; line-height: 1.05; letter-spacing: -2px;
+      margin-bottom: 24px;
+    }
+    .hero-title .grad {
+      background: linear-gradient(135deg, #c4b5fd 0%, var(--accent) 60%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: clamp(15px, 2vw, 19px); color: var(--text-mut);
+      max-width: 500px; margin: 0 auto 44px; line-height: 1.75;
+    }
+    .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .btn-p {
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      color: #fff; padding: 15px 40px;
+      border-radius: 12px; font-size: 16px; font-weight: 800;
+      text-decoration: none; letter-spacing: 0.3px;
+      box-shadow: 0 10px 40px rgba(124,58,237,0.45);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-p:hover { transform: translateY(-2px); box-shadow: 0 16px 50px rgba(124,58,237,0.6); }
+    .btn-s {
+      background: transparent; color: var(--text-mut);
+      padding: 15px 28px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 15px; font-weight: 600; text-decoration: none;
+      transition: border-color 0.2s, color 0.2s, transform 0.15s;
+    }
+    .btn-s:hover { border-color: var(--accent); color: var(--text); transform: translateY(-2px); }
+    .hero-note { font-size: 12px; color: var(--text-dim); margin-top: 16px; }
+    .hero-note b { color: var(--accent-lt); }
+
+    /* Scroll hint */
+    .scroll-hint {
+      position: absolute; bottom: 32px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      color: var(--text-dim); font-size: 11px; letter-spacing: 2px;
+      text-transform: uppercase; animation: bounce 2.5s ease-in-out infinite;
+    }
+    .scroll-hint svg { opacity: 0.5; }
+    @keyframes bounce { 0%,100% { transform:translateX(-50%) translateY(0); } 50% { transform:translateX(-50%) translateY(8px); } }
+
+    /* ── FEATURE PANELS ── */
+
+    /* World Map Panel */
+    .panel-map {
+      background: radial-gradient(ellipse 60% 60% at 30% 50%,
+        rgba(124,58,237,0.12) 0%, transparent 70%);
+    }
+    .panel-map .cyl-wrap {
+      grid-template-columns: 1.2fr 1fr;
+    }
+    @media(max-width:700px){ .panel-map .cyl-wrap { grid-template-columns: 1fr; } }
+
+    /* Network Panel */
+    .panel-network {
+      background: radial-gradient(ellipse 60% 60% at 70% 50%,
+        rgba(91,33,182,0.14) 0%, transparent 70%);
+    }
+    .panel-network .cyl-wrap {
+      grid-template-columns: 1fr 1.2fr;
+    }
+    @media(max-width:700px){ .panel-network .cyl-wrap { grid-template-columns: 1fr; } }
+
+    /* Contacts Panel */
+    .panel-contacts {
+      background: radial-gradient(ellipse 60% 60% at 30% 50%,
+        rgba(124,58,237,0.10) 0%, transparent 70%);
+    }
+    .panel-contacts .cyl-wrap {
+      grid-template-columns: 1.2fr 1fr;
+    }
+    @media(max-width:700px){ .panel-contacts .cyl-wrap { grid-template-columns: 1fr; } }
+
+    /* ── SCREENSHOT FRAMES ── */
+    .screen-frame {
+      border-radius: 16px; overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5),
+                  0 0 0 1px rgba(124,58,237,0.08);
+      background: var(--bg-card);
+    }
+    .screen-frame .bar {
+      height: 32px; background: #0c0c18;
+      display: flex; align-items: center; padding: 0 14px; gap: 7px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .dot-r { width:10px;height:10px;border-radius:50%;background:#ff5f57; }
+    .dot-y { width:10px;height:10px;border-radius:50%;background:#febc2e; }
+    .dot-g { width:10px;height:10px;border-radius:50%;background:#28c840; }
+    .screen-frame img {
+      width: 100%; display: block;
+    }
+    .screen-frame .placeholder {
+      height: 300px; display: flex; align-items: center; justify-content: center;
+      color: var(--text-dim); font-size: 13px;
+      background: linear-gradient(160deg, #10101a 0%, #0c0c16 100%);
+    }
+
+    /* ── TEXT CONTENT ── */
+    .feat-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--accent-lt); margin-bottom: 14px;
+    }
+    .feat-title {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 900; line-height: 1.15; margin-bottom: 18px;
+    }
+    .feat-title .grad {
+      background: linear-gradient(135deg, var(--accent-lt), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .feat-desc {
+      font-size: 16px; color: var(--text-mut); line-height: 1.75;
+      margin-bottom: 28px; max-width: 380px;
+    }
+    .feat-list { list-style: none; }
+    .feat-list li {
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: 14px; color: var(--text-mut); padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .feat-list li:last-child { border-bottom: none; }
+    .feat-list li .ic { color: var(--accent-lt); font-size: 15px; flex-shrink: 0; }
+
+    /* ── WHAT'S NEW PANEL ── */
+    .panel-new {
+      background: radial-gradient(ellipse 70% 60% at 50% 100%,
+        rgba(124,58,237,0.18) 0%, transparent 65%);
+      text-align: center;
+    }
+    .new-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-top: 48px; width: 100%; max-width: 900px;
+    }
+    .new-card {
+      background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; padding: 24px;
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.3s;
+    }
+    .new-card:hover { border-color: var(--border); }
+    .new-card.visible { opacity: 1; transform: translateY(0); }
+    .new-card:nth-child(1).visible { transition-delay: 0.1s; }
+    .new-card:nth-child(2).visible { transition-delay: 0.2s; }
+    .new-card:nth-child(3).visible { transition-delay: 0.3s; }
+    .new-card:nth-child(4).visible { transition-delay: 0.4s; }
+    .new-icon { font-size: 28px; margin-bottom: 14px; }
+    .new-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+    .new-card p { font-size: 13px; color: var(--text-mut); line-height: 1.65; }
+
+    /* ── PRICING PANEL ── */
+    .panel-price {
+      background: var(--bg-card);
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .price-wrap {
+      width: 100%; max-width: 760px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      opacity: 0; transform: perspective(1200px) rotateY(20deg) translateX(80px);
+      transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1),
+                  transform 0.9s cubic-bezier(0.16,1,0.3,1);
+    }
+    .price-wrap.visible {
+      opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0);
+    }
+    @media(max-width:600px) { .price-wrap { grid-template-columns: 1fr; } }
+    .pc {
+      background: #0c0c16; border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px; padding: 32px 28px;
+      transition: transform 0.2s;
+    }
+    .pc:hover { transform: translateY(-4px); }
+    .pc.pro {
+      border-color: var(--accent);
+      background: linear-gradient(160deg, #18102e 0%, #0e0e1c 100%);
+      box-shadow: 0 0 0 1px var(--accent), 0 20px 60px rgba(124,58,237,0.2);
+      position: relative;
+    }
+    .pro-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #fff;
+      font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+      padding: 3px 14px; border-radius: 99px; text-transform: uppercase;
+    }
+    .pc-tier { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--text-mut); text-transform: uppercase; margin-bottom: 10px; }
+    .pc-price { font-size: 44px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .pc-price sup { font-size: 20px; vertical-align: top; margin-top: 8px; }
+    .pc-price .old { font-size: 16px; color: var(--text-dim); text-decoration: line-through; font-weight: 400; }
+    .pc-note { font-size: 12px; color: var(--text-dim); margin-bottom: 24px; }
+    .pc-note b { color: var(--accent-lt); }
+    .pc-list { list-style: none; margin-bottom: 28px; }
+    .pc-list li {
+      display: flex; align-items: center; gap: 9px;
+      font-size: 13px; color: var(--text-mut); padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .pc-list li:last-child { border-bottom: none; }
+    .ck { color: var(--accent-lt); }
+    .xk { color: var(--text-dim); }
+    .btn-buy {
+      display: block; width: 100%; text-align: center;
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      color: #fff; padding: 13px; border-radius: 10px;
+      font-size: 14px; font-weight: 800; text-decoration: none;
+      box-shadow: 0 8px 24px rgba(124,58,237,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-buy:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(124,58,237,0.55); }
+    .btn-free {
+      display: block; width: 100%; text-align: center;
+      background: transparent; color: var(--text-mut); padding: 13px;
+      border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+      font-size: 14px; font-weight: 700; text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-free:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #050508;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      padding: 32px 24px; text-align: center;
+    }
+    .footer-logo { font-size: 14px; font-weight: 900; letter-spacing: 4px; color: var(--text-dim); margin-bottom: 14px; }
+    .footer-links { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .footer-links a { font-size: 13px; color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--accent-lt); }
+    .footer-copy { font-size: 11px; color: #2a2840; }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      position: fixed; top: 0; left: 0; z-index: 300;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-lt));
+      width: 0%; transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+
+<div class="progress-bar" id="pbar"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <img src="assets/logo.png" alt="" onerror="this.style.display='none'" />
+    NEXUS <span class="hl">NODE</span>
+  </a>
+  <a class="nav-buy" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99</a>
+</nav>
+
+<!-- SCROLL DOTS -->
+<div class="scroll-dots">
+  <div class="sdot active" onclick="scrollTo(0)"></div>
+  <div class="sdot" onclick="scrollTo(1)"></div>
+  <div class="sdot" onclick="scrollTo(2)"></div>
+  <div class="sdot" onclick="scrollTo(3)"></div>
+  <div class="sdot" onclick="scrollTo(4)"></div>
+  <div class="sdot" onclick="scrollTo(5)"></div>
+</div>
+
+<!-- ── PANEL 0: HERO ── -->
+<section class="panel panel-hero" data-idx="0">
+  <div class="hero-badge"><div class="pulse-dot"></div> v1.1.0 — Now Available</div>
+  <h1 class="hero-title">
+    Know Your Network.<br>
+    <span class="grad">Own Your Connections.</span>
+  </h1>
+  <p class="hero-sub">Stop storing contacts. Start using them. NEXUS NODE turns your entire network into a living, visual map.</p>
+  <div class="hero-ctas">
+    <a class="btn-p" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">✦ &nbsp;Get PRO — €8.99</a>
+    <a class="btn-s" href="#" onclick="scrollTo(1);return false;">See it in action ↓</a>
+  </div>
+  <p class="hero-note">One-time payment · No subscription · <b>Data stays on your device</b></p>
+
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
+      <rect x="5" y="1" width="6" height="10" rx="3" stroke="#a78bfa" stroke-width="1.5"/>
+      <circle cx="8" cy="4" r="1.5" fill="#a78bfa"/>
+      <path d="M4 15l4 4 4-4" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ── PANEL 1: WORLD MAP ── -->
+<section class="panel panel-map" data-idx="1">
+  <div class="cyl-wrap" id="cyl-1">
+    <!-- Graphic first -->
+    <div class="screen-frame">
+      <div class="bar"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div>
+      <img src="assets/screenshot-map.png" alt="World Map"
+           onerror="this.outerHTML='<div class=\'placeholder\'>📸 World Map</div>'" />
+    </div>
+    <!-- Text fades in after -->
+    <div class="cyl-text">
+      <div class="feat-label">🌍 World Map</div>
+      <h2 class="feat-title">See where your<br><span class="grad">network lives</span></h2>
+      <p class="feat-desc">Pin contacts on a real interactive map. Plan travels, find who's near you, and build your wishlist of places to visit.</p>
+      <ul class="feat-list">
+        <li><span class="ic">📍</span> Auto-geocode every contact's address</li>
+        <li><span class="ic">✈️</span> Travel mode — see who's nearby</li>
+        <li><span class="ic">⭐</span> Wishlist — places you want to visit</li>
+        <li><span class="ic">🏠</span> Set your home base</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── PANEL 2: NETWORK GRAPH ── -->
+<section class="panel panel-network" data-idx="2">
+  <div class="cyl-wrap from-left" id="cyl-2">
+    <div class="cyl-text">
+      <div class="feat-label">⬡ Network Graph</div>
+      <h2 class="feat-title">Visualize your<br><span class="grad">entire world</span></h2>
+      <p class="feat-desc">See all relationships at once. Clusters, influence scores, hidden connections — all interactive, all live.</p>
+      <ul class="feat-list">
+        <li><span class="ic">🕸️</span> Interactive force-directed graph</li>
+        <li><span class="ic">📊</span> Influence score per contact</li>
+        <li><span class="ic">🔗</span> Shortest path between any 2 people</li>
+        <li><span class="ic">🎨</span> Color-coded clusters</li>
+      </ul>
+    </div>
+    <div class="screen-frame">
+      <div class="bar"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div>
+      <img src="assets/screenshot-network.png" alt="Network Graph"
+           onerror="this.outerHTML='<div class=\'placeholder\'>📸 Network Graph</div>'" />
+    </div>
+  </div>
+</section>
+
+<!-- ── PANEL 3: CONTACTS ── -->
+<section class="panel panel-contacts" data-idx="3">
+  <div class="cyl-wrap" id="cyl-3">
+    <div class="screen-frame">
+      <div class="bar"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div>
+      <img src="assets/screenshot-contacts.png" alt="Contacts"
+           onerror="this.outerHTML='<div class=\'placeholder\'>📸 Contacts</div>'" />
+    </div>
+    <div class="cyl-text">
+      <div class="feat-label">👤 Contacts</div>
+      <h2 class="feat-title">Every detail.<br><span class="grad">One clean card.</span></h2>
+      <p class="feat-desc">Photos, categories, priorities, social links, birthdays — all in one beautiful card. Filter and find instantly.</p>
+      <ul class="feat-list">
+        <li><span class="ic">📷</span> Photos & color avatars</li>
+        <li><span class="ic">🔥</span> Warmth score — who's going cold</li>
+        <li><span class="ic">🎂</span> Birthday reminders</li>
+        <li><span class="ic">🏷️</span> Categories & priorities</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── PANEL 4: WHAT'S NEW IN v1.1 ── -->
+<section class="panel panel-new" data-idx="4">
+  <div style="text-align:center;width:100%;max-width:900px;">
+    <div class="feat-label" style="justify-content:center;display:flex;">🆕 New in v1.1</div>
+    <h2 class="feat-title" style="margin-bottom:12px;">What's new &amp; improved</h2>
+    <p style="color:var(--text-mut);font-size:15px;max-width:480px;margin:0 auto;">Every update brings NEXUS NODE closer to the perfect network tool. Here's what landed in v1.1.</p>
+  </div>
+  <div class="new-grid" id="new-grid">
+    <div class="new-card">
+      <div class="new-icon">⚡</div>
+      <h3>Instant Splash Screen</h3>
+      <p>App loads immediately. Smooth progress bar from the first frame — no delay, no blank screen.</p>
+    </div>
+    <div class="new-card">
+      <div class="new-icon">📊</div>
+      <h3>Dashboard No Flicker</h3>
+      <p>Charts no longer reload every 60 seconds. Smart hash-guard — only updates when data actually changes.</p>
+    </div>
+    <div class="new-card">
+      <div class="new-icon">🗺️</div>
+      <h3>Map Sidebar Fix</h3>
+      <p>World Map sidebar now has proper spacing. Clean gap between map and wishlist panel.</p>
+    </div>
+    <div class="new-card">
+      <div class="new-icon">🔒</div>
+      <h3>Code Audit</h3>
+      <p>Deep audit of the full codebase. Fixed hardcoded versions, tab order, import errors and more.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── PANEL 5: PRICING ── -->
+<section class="panel panel-price" data-idx="5">
+  <div style="text-align:center;margin-bottom:48px;width:100%;max-width:760px;">
+    <div class="feat-label" style="justify-content:center;display:flex;">Pricing</div>
+    <h2 class="feat-title">Simple. One-time. Forever.</h2>
+  </div>
+  <div class="price-wrap" id="pwrap">
+    <div class="pc">
+      <div class="pc-tier">Free</div>
+      <div class="pc-price">€0</div>
+      <div class="pc-note">Always free, forever</div>
+      <ul class="pc-list">
+        <li><span class="ck">✓</span> Up to 15 contacts</li>
+        <li><span class="ck">✓</span> Network graph</li>
+        <li><span class="ck">✓</span> World Map</li>
+        <li><span class="xk">✗</span> Import / Export</li>
+        <li><span class="xk">✗</span> Multiple profiles</li>
+      </ul>
+      <a class="btn-free" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Download Free</a>
+    </div>
+    <div class="pc pro">
+      <div class="pro-badge">LAUNCH PRICE</div>
+      <div class="pc-tier">PRO</div>
+      <div class="pc-price"><sup>€</sup>8.99 <span class="old">€12.99</span></div>
+      <div class="pc-note">Regular price June 1st · <b>Save 30%</b></div>
+      <ul class="pc-list">
+        <li><span class="ck">✓</span> Unlimited contacts</li>
+        <li><span class="ck">✓</span> Import / Export</li>
+        <li><span class="ck">✓</span> Multiple profiles</li>
+        <li><span class="ck">✓</span> Backup & PDF export</li>
+        <li><span class="ck">✓</span> Priority support</li>
+      </ul>
+      <a class="btn-buy" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99 →</a>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--text-dim);margin-top:28px;text-align:center;">
+    One-time payment · 1 device · No subscription<br>
+    <a href="mailto:nexusnode.contact@gmail.com" style="color:var(--text-dim);text-decoration:none;margin-top:8px;display:inline-block;">✉ nexusnode.contact@gmail.com</a>
+  </p>
+</section>
+
+<footer>
+  <div class="footer-logo">NEXUS NODE</div>
+  <div class="footer-links">
+    <a href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Buy on Gumroad</a>
+    <a href="https://crystal-epoch-3d5.notion.site/FAQ-NEXUS-NODE-3333aeb440a1808bb726c62cd1366eb9" target="_blank">FAQ</a>
+    <a href="mailto:nexusnode.contact@gmail.com">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 NEXUS NODE · All rights reserved</div>
+</footer>
+
+<script>
+  const panels = document.querySelectorAll('.panel');
+  const dots   = document.querySelectorAll('.sdot');
+
+  // ── Scroll progress bar ──
+  window.addEventListener('scroll', () => {
+    const s = document.documentElement.scrollTop;
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    document.getElementById('pbar').style.width = (s / h * 100) + '%';
+  });
+
+  // ── Scroll to panel ──
+  function scrollTo(idx) {
+    panels[idx].scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── Intersection Observer ──
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      const idx = parseInt(e.target.dataset.idx);
+
+      // Update dots
+      if (e.isIntersecting) {
+        dots.forEach(d => d.classList.remove('active'));
+        dots[idx].classList.add('active');
+      }
+
+      // Cylinder panels
+      const cyl = e.target.querySelector('.cyl-wrap');
+      if (cyl) {
+        if (e.isIntersecting) cyl.classList.add('visible');
+      }
+
+      // New cards
+      if (e.target.classList.contains('panel-new') && e.isIntersecting) {
+        document.querySelectorAll('.new-card').forEach(c => c.classList.add('visible'));
+      }
+
+      // Pricing
+      const pw = document.getElementById('pwrap');
+      if (e.target.classList.contains('panel-price') && pw && e.isIntersecting) {
+        pw.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.3 });
+
+  panels.forEach(p => io.observe(p));
+</script>
+</body>
+</html>
