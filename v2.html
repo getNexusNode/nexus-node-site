@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NEXUS NODE — Know Your Network</title>
   <meta name="description" content="Turn your contacts into a visual network you can actually use." />
+  <link rel="icon" href="assets/logo.png" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -18,7 +19,7 @@
       --text-mut:  #8a87aa;
       --text-dim:  #4a4768;
     }
-    html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+    html { scroll-snap-type: y proximity; scroll-behavior: smooth; }
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
       background: var(--bg); color: var(--text);
@@ -388,12 +389,12 @@
 
 <!-- SCROLL DOTS -->
 <div class="scroll-dots">
-  <div class="sdot active" onclick="scrollTo(0)"></div>
-  <div class="sdot" onclick="scrollTo(1)"></div>
-  <div class="sdot" onclick="scrollTo(2)"></div>
-  <div class="sdot" onclick="scrollTo(3)"></div>
-  <div class="sdot" onclick="scrollTo(4)"></div>
-  <div class="sdot" onclick="scrollTo(5)"></div>
+  <div class="sdot active" onclick="goToPanel(0)"></div>
+  <div class="sdot" onclick="goToPanel(1)"></div>
+  <div class="sdot" onclick="goToPanel(2)"></div>
+  <div class="sdot" onclick="goToPanel(3)"></div>
+  <div class="sdot" onclick="goToPanel(4)"></div>
+  <div class="sdot" onclick="goToPanel(5)"></div>
 </div>
 
 <!-- ── PANEL 0: HERO ── -->
@@ -406,18 +407,18 @@
   <p class="hero-sub">Stop storing contacts. Start using them. NEXUS NODE turns your entire network into a living, visual map.</p>
   <div class="hero-ctas">
     <a class="btn-p" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">✦ &nbsp;Get PRO — €8.99</a>
-    <a class="btn-s" href="#" onclick="scrollTo(1);return false;">See it in action ↓</a>
+    <a class="btn-s" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Try for Free</a>
   </div>
   <p class="hero-note">One-time payment · No subscription · <b>Data stays on your device</b></p>
+  <a class="scroll-hint" href="#" onclick="goToPanel(1);return false;" style="text-decoration:none;color:inherit;cursor:pointer;">
+    <span>See it in action</span>
 
-  <div class="scroll-hint">
-    <span>Scroll</span>
-    <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
+    <svg width="16" height="20" viewBox="0 0 16 20" fill="none" style="margin-top:4px;">
       <rect x="5" y="1" width="6" height="10" rx="3" stroke="#a78bfa" stroke-width="1.5"/>
       <circle cx="8" cy="4" r="1.5" fill="#a78bfa"/>
       <path d="M4 15l4 4 4-4" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
     </svg>
-  </div>
+  </a>
 </section>
 
 <!-- ── PANEL 1: WORLD MAP ── -->
@@ -560,6 +561,29 @@
   </p>
 </section>
 
+<!-- ── IMPRESSUM ── -->
+<section style="background:#05050a;border-top:1px solid rgba(255,255,255,0.04);padding:60px 24px;">
+  <div style="max-width:600px;margin:0 auto;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#4a4768;margin-bottom:24px;">Impressum / Legal Notice</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;font-size:13px;color:#4a4768;line-height:1.8;">
+      <div>
+        <p style="color:#6e6a85;font-weight:700;margin-bottom:8px;">Contact</p>
+        <p>nexusnode.contact@gmail.com</p>
+        <p style="margin-top:12px;font-size:11px;">For license issues, refunds or support — we usually reply within 24h.</p>
+      </div>
+      <div>
+        <p style="color:#6e6a85;font-weight:700;margin-bottom:8px;">Product</p>
+        <p>NEXUS NODE v1.1.0</p>
+        <p>Windows Desktop Application</p>
+        <p>Sold via Gumroad</p>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#2e2c42;margin-top:32px;border-top:1px solid rgba(255,255,255,0.03);padding-top:20px;">
+      This software is provided "as is". All data is stored locally on the user's device. No personal data is collected or transmitted by NEXUS NODE.
+    </p>
+  </div>
+</section>
+
 <footer>
   <div class="footer-logo">NEXUS NODE</div>
   <div class="footer-links">
@@ -582,7 +606,7 @@
   });
 
   // ── Scroll to panel ──
-  function scrollTo(idx) {
+  function goToPanel(idx) {
     panels[idx].scrollIntoView({ behavior: 'smooth' });
   }
 
