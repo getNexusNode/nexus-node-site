@@ -4,816 +4,643 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NEXUS NODE — Know Your Network</title>
-  <meta name="description" content="Turn your contacts into a visual network you can actually use. NEXUS NODE gives you full control and shows how your contacts are connected." />
-  <meta property="og:title" content="NEXUS NODE — Know Your Network" />
-  <meta property="og:description" content="Visualize your entire network. Find connections. Master relationships. One-time payment." />
-  <meta property="og:image" content="assets/screenshot-contacts.png" />
+  <meta name="description" content="Turn your contacts into a visual network you can actually use." />
   <link rel="icon" href="assets/logo.png" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --accent:      #7c3aed;
-      --accent-lt:   #a78bfa;
-      --accent-dim:  rgba(124,58,237,0.18);
-      --accent-glow: rgba(124,58,237,0.35);
-      --bg:          #0b0b16;
-      --bg-card:     #13131f;
-      --bg-card2:    #1a1a2e;
-      --border:      rgba(124,58,237,0.22);
-      --border-lt:   rgba(255,255,255,0.07);
-      --text:        #ece9f8;
-      --text-mut:    #9490b0;
-      --text-dim:    #5e5a7a;
-      --radius:      16px;
-      --radius-sm:   10px;
+      --accent:    #7c3aed;
+      --accent-lt: #a78bfa;
+      --accent-dim: rgba(124,58,237,0.15);
+      --bg:        #08080f;
+      --bg-card:   #10101a;
+      --border:    rgba(124,58,237,0.25);
+      --text:      #ece9f8;
+      --text-mut:  #8a87aa;
+      --text-dim:  #4a4768;
     }
-
-    html { scroll-behavior: smooth; }
-
+    html { scroll-snap-type: y proximity; scroll-behavior: smooth; }
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
       overflow-x: hidden;
     }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
 
-    /* ── SCROLLBAR ─────────────────────────────── */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-
-    /* ── NAV ───────────────────────────────────── */
+    /* ── NAV ── */
     nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: 58px;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 40px; height: 64px;
-      background: rgba(11,11,22,0.85);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border-lt);
-      transition: background 0.3s;
+      padding: 0 32px;
+      background: rgba(8,8,15,0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
     }
     .nav-logo {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 17px; font-weight: 900; letter-spacing: 3px;
+      display: flex; align-items: center; gap: 9px;
+      font-size: 15px; font-weight: 900; letter-spacing: 3px;
       color: var(--text); text-decoration: none;
     }
-    .nav-logo img { width: 28px; height: 28px; }
-    .nav-logo span { color: var(--accent-lt); }
-    .nav-links { display: flex; align-items: center; gap: 28px; }
-    .nav-links a {
-      color: var(--text-mut); font-size: 13px; text-decoration: none;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover { color: var(--text); }
-    .btn-nav {
+    .nav-logo img { width: 24px; height: 24px; border-radius: 6px; }
+    .nav-logo .hl { color: var(--accent-lt); }
+    .nav-buy {
       background: var(--accent); color: #fff;
-      padding: 8px 22px; border-radius: 8px;
-      font-size: 13px; font-weight: 700;
-      text-decoration: none; letter-spacing: 0.5px;
+      padding: 7px 20px; border-radius: 8px;
+      font-size: 13px; font-weight: 700; text-decoration: none;
       transition: background 0.2s, transform 0.15s;
     }
-    .btn-nav:hover { background: #6d28d9; transform: translateY(-1px); }
+    .nav-buy:hover { background: #6d28d9; transform: translateY(-1px); }
 
-    /* ── HERO ──────────────────────────────────── */
-    .hero {
+    /* ── SCROLL INDICATOR ── */
+    .scroll-dots {
+      position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 10px; z-index: 100;
+    }
+    .sdot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-dim); cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+    .sdot.active { background: var(--accent-lt); transform: scale(1.5); }
+
+    /* ── SECTION BASE ── */
+    .panel {
       min-height: 100vh;
+      scroll-snap-align: start;
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      text-align: center;
-      padding: 100px 24px 60px;
+      justify-content: center; align-items: center;
+      padding: 80px 24px 40px;
       position: relative; overflow: hidden;
     }
-    .hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.22) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(91,33,182,0.12) 0%, transparent 60%);
-      pointer-events: none;
+
+    /* ── CYLINDER ANIMATION CLASSES ── */
+    .cyl-wrap {
+      width: 100%; max-width: 900px;
+      display: grid; gap: 48px;
+      align-items: center;
+      opacity: 0;
+      transform: perspective(1200px) rotateY(25deg) translateX(120px);
+      transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1),
+                  transform 0.9s cubic-bezier(0.16,1,0.3,1);
+    }
+    .cyl-wrap.visible {
+      opacity: 1;
+      transform: perspective(1200px) rotateY(0deg) translateX(0);
+    }
+    /* Alternate — from left */
+    .cyl-wrap.from-left {
+      transform: perspective(1200px) rotateY(-25deg) translateX(-120px);
+    }
+    .cyl-wrap.from-left.visible {
+      transform: perspective(1200px) rotateY(0deg) translateX(0);
+    }
+
+    /* Text fades in AFTER graphic — delayed */
+    .cyl-text {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.7s ease 0.45s, transform 0.7s ease 0.45s;
+    }
+    .cyl-wrap.visible .cyl-text {
+      opacity: 1; transform: translateY(0);
+    }
+
+    /* ── HERO PANEL ── */
+    .panel-hero {
+      background: radial-gradient(ellipse 90% 70% at 50% 0%,
+        rgba(124,58,237,0.2) 0%, transparent 65%);
+      text-align: center;
     }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 8px;
       background: var(--accent-dim); border: 1px solid var(--border);
-      color: var(--accent-lt); font-size: 12px; font-weight: 700;
-      letter-spacing: 1.5px; padding: 6px 16px; border-radius: 99px;
-      margin-bottom: 28px; text-transform: uppercase;
+      color: var(--accent-lt); font-size: 11px; font-weight: 700;
+      letter-spacing: 2px; padding: 5px 16px; border-radius: 99px;
+      margin-bottom: 32px; text-transform: uppercase;
     }
-    .hero-badge .dot {
-      width: 7px; height: 7px; border-radius: 50%;
+    .pulse-dot {
+      width: 6px; height: 6px; border-radius: 50%;
       background: var(--accent-lt);
       animation: pulse 2s ease-in-out infinite;
     }
     @keyframes pulse {
       0%,100% { opacity:1; transform:scale(1); }
-      50% { opacity:0.5; transform:scale(1.3); }
+      50% { opacity:0.4; transform:scale(1.4); }
     }
-    .hero h1 {
-      font-size: clamp(36px, 6vw, 72px);
-      font-weight: 900; line-height: 1.1;
-      letter-spacing: -1px;
+    .hero-title {
+      font-size: clamp(38px, 7vw, 78px);
+      font-weight: 900; line-height: 1.05; letter-spacing: -2px;
       margin-bottom: 24px;
     }
-    .hero h1 .highlight {
-      background: linear-gradient(135deg, var(--accent-lt) 0%, var(--accent) 100%);
+    .hero-title .grad {
+      background: linear-gradient(135deg, #c4b5fd 0%, var(--accent) 60%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
     .hero-sub {
-      font-size: clamp(15px, 2vw, 19px);
-      color: var(--text-mut); max-width: 560px;
-      margin: 0 auto 40px; line-height: 1.7;
+      font-size: clamp(15px, 2vw, 19px); color: var(--text-mut);
+      max-width: 500px; margin: 0 auto 44px; line-height: 1.75;
     }
-    .hero-ctas {
-      display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
-      margin-bottom: 20px;
-    }
-    .btn-primary {
+    .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .btn-p {
       background: linear-gradient(135deg, #7c3aed, #5b21b6);
-      color: #fff; padding: 14px 36px;
-      border-radius: 10px; font-size: 15px; font-weight: 800;
-      text-decoration: none; letter-spacing: 0.5px;
-      box-shadow: 0 8px 30px rgba(124,58,237,0.4);
+      color: #fff; padding: 15px 40px;
+      border-radius: 12px; font-size: 16px; font-weight: 800;
+      text-decoration: none; letter-spacing: 0.3px;
+      box-shadow: 0 10px 40px rgba(124,58,237,0.45);
       transition: transform 0.15s, box-shadow 0.15s;
     }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(124,58,237,0.55); }
-    .btn-secondary {
+    .btn-p:hover { transform: translateY(-2px); box-shadow: 0 16px 50px rgba(124,58,237,0.6); }
+    .btn-s {
       background: transparent; color: var(--text-mut);
-      padding: 14px 28px; border-radius: 10px;
-      border: 1px solid var(--border-lt);
-      font-size: 15px; font-weight: 600;
-      text-decoration: none;
+      padding: 15px 28px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 15px; font-weight: 600; text-decoration: none;
       transition: border-color 0.2s, color 0.2s, transform 0.15s;
     }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--text); transform: translateY(-2px); }
-    .hero-note {
-      font-size: 12px; color: var(--text-dim); margin-top: 6px;
-    }
+    .btn-s:hover { border-color: var(--accent); color: var(--text); transform: translateY(-2px); }
+    .hero-note { font-size: 12px; color: var(--text-dim); margin-top: 16px; }
     .hero-note b { color: var(--accent-lt); }
 
-    /* ── SCREENSHOT WINDOW ─────────────────────── */
-    .hero-screenshot {
-      margin-top: 60px;
-      width: 100%; max-width: 1000px;
-      position: relative;
+    /* Scroll hint */
+    .scroll-hint {
+      position: absolute; bottom: 32px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      color: var(--text-dim); font-size: 11px; letter-spacing: 2px;
+      text-transform: uppercase; animation: bounce 2.5s ease-in-out infinite;
     }
-    .window-chrome {
-      background: #1a1a2e;
+    .scroll-hint svg { opacity: 0.5; }
+    @keyframes bounce { 0%,100% { transform:translateX(-50%) translateY(0); } 50% { transform:translateX(-50%) translateY(8px); } }
+
+    /* ── FEATURE PANELS ── */
+
+    /* World Map Panel */
+    .panel-map {
+      background: radial-gradient(ellipse 60% 60% at 30% 50%,
+        rgba(124,58,237,0.12) 0%, transparent 70%);
+    }
+    .panel-map .cyl-wrap {
+      grid-template-columns: 1.2fr 1fr;
+    }
+    @media(max-width:700px){ .panel-map .cyl-wrap { grid-template-columns: 1fr; } }
+
+    /* Network Panel */
+    .panel-network {
+      background: radial-gradient(ellipse 60% 60% at 70% 50%,
+        rgba(91,33,182,0.14) 0%, transparent 70%);
+    }
+    .panel-network .cyl-wrap {
+      grid-template-columns: 1fr 1.2fr;
+    }
+    @media(max-width:700px){ .panel-network .cyl-wrap { grid-template-columns: 1fr; } }
+
+    /* Contacts Panel */
+    .panel-contacts {
+      background: radial-gradient(ellipse 60% 60% at 30% 50%,
+        rgba(124,58,237,0.10) 0%, transparent 70%);
+    }
+    .panel-contacts .cyl-wrap {
+      grid-template-columns: 1.2fr 1fr;
+    }
+    @media(max-width:700px){ .panel-contacts .cyl-wrap { grid-template-columns: 1fr; } }
+
+    /* ── SCREENSHOT FRAMES ── */
+    .screen-frame {
+      border-radius: 16px; overflow: hidden;
       border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,58,237,0.1);
-    }
-    .window-titlebar {
-      background: #111120;
-      height: 36px;
-      display: flex; align-items: center; padding: 0 16px; gap: 8px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    .window-dot { width: 11px; height: 11px; border-radius: 50%; }
-    .window-dot.r { background: #ff5f57; }
-    .window-dot.y { background: #febc2e; }
-    .window-dot.g { background: #28c840; }
-    .window-titlebar-text {
-      margin-left: auto; margin-right: auto;
-      font-size: 11px; color: var(--text-dim); letter-spacing: 2px;
-    }
-    .screenshot-tabs {
-      display: flex; gap: 4px; padding: 10px 14px 0;
-      background: #111120;
-    }
-    .stab {
-      padding: 6px 16px; border-radius: 6px 6px 0 0;
-      font-size: 11px; font-weight: 600; cursor: pointer;
-      color: var(--text-dim); transition: all 0.2s;
-      border: 1px solid transparent; border-bottom: none;
-    }
-    .stab.active { background: var(--bg-card); color: var(--accent-lt); border-color: var(--border); }
-    .stab:hover:not(.active) { color: var(--text-mut); }
-    .screenshot-frame {
-      display: none;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5),
+                  0 0 0 1px rgba(124,58,237,0.08);
       background: var(--bg-card);
-      min-height: 420px;
     }
-    .screenshot-frame.active { display: block; }
-    .screenshot-frame img {
+    .screen-frame .bar {
+      height: 32px; background: #0c0c18;
+      display: flex; align-items: center; padding: 0 14px; gap: 7px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .dot-r { width:10px;height:10px;border-radius:50%;background:#ff5f57; }
+    .dot-y { width:10px;height:10px;border-radius:50%;background:#febc2e; }
+    .dot-g { width:10px;height:10px;border-radius:50%;background:#28c840; }
+    .screen-frame img {
       width: 100%; display: block;
-      border-radius: 0 0 13px 13px;
     }
-    .screenshot-placeholder {
-      display: flex; align-items: center; justify-content: center;
-      height: 420px;
+    .screen-frame .placeholder {
+      height: 300px; display: flex; align-items: center; justify-content: center;
       color: var(--text-dim); font-size: 13px;
-      background: linear-gradient(180deg, #13131f 0%, #0f0f1e 100%);
-      border-radius: 0 0 13px 13px;
+      background: linear-gradient(160deg, #10101a 0%, #0c0c16 100%);
     }
 
-    /* ── SECTION BASE ──────────────────────────── */
-    section { padding: 90px 24px; }
-    .container { max-width: 1080px; margin: 0 auto; }
-    .section-label {
-      font-size: 11px; font-weight: 800; letter-spacing: 3px;
-      text-transform: uppercase; color: var(--accent-lt);
-      margin-bottom: 12px;
+    /* ── TEXT CONTENT ── */
+    .feat-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--accent-lt); margin-bottom: 14px;
     }
-    .section-title {
-      font-size: clamp(26px, 4vw, 42px);
-      font-weight: 900; line-height: 1.2;
-      margin-bottom: 16px;
+    .feat-title {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 900; line-height: 1.15; margin-bottom: 18px;
     }
-    .section-sub {
-      font-size: 16px; color: var(--text-mut); max-width: 520px;
-      line-height: 1.7;
-    }
-
-    /* ── STATS BAR ─────────────────────────────── */
-    .stats-bar {
-      background: var(--bg-card);
-      border-top: 1px solid var(--border-lt);
-      border-bottom: 1px solid var(--border-lt);
-      padding: 36px 24px;
-    }
-    .stats-inner {
-      max-width: 1080px; margin: 0 auto;
-      display: flex; justify-content: space-around; flex-wrap: wrap; gap: 24px;
-    }
-    .stat { text-align: center; }
-    .stat-val {
-      font-size: 36px; font-weight: 900;
+    .feat-title .grad {
       background: linear-gradient(135deg, var(--accent-lt), var(--accent));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .stat-lbl { font-size: 13px; color: var(--text-mut); margin-top: 4px; }
-
-    /* ── FEATURES ──────────────────────────────── */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px; margin-top: 56px;
+    .feat-desc {
+      font-size: 16px; color: var(--text-mut); line-height: 1.75;
+      margin-bottom: 28px; max-width: 380px;
     }
-    .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-lt);
-      border-radius: var(--radius);
-      padding: 28px;
-      transition: border-color 0.3s, transform 0.2s, box-shadow 0.3s;
-    }
-    .feature-card:hover {
-      border-color: var(--border);
-      transform: translateY(-3px);
-      box-shadow: 0 12px 40px rgba(124,58,237,0.12);
-    }
-    .feature-icon {
-      width: 46px; height: 46px; border-radius: 12px;
-      background: var(--accent-dim);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; margin-bottom: 18px;
-    }
-    .feature-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
-    .feature-card p { font-size: 14px; color: var(--text-mut); line-height: 1.65; }
-
-    /* ── SCREENSHOTS SECTION ───────────────────── */
-    .screenshots-section { background: var(--bg-card2); }
-    .screenshots-section .section-sub { margin-bottom: 48px; }
-    .screen-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px; margin-top: 40px;
-    }
-    .screen-card {
-      border-radius: var(--radius);
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-    }
-    .screen-card-label {
-      padding: 10px 16px;
-      background: #111120;
-      font-size: 11px; color: var(--text-dim);
-      letter-spacing: 2px; text-transform: uppercase;
+    .feat-list { list-style: none; }
+    .feat-list li {
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: 14px; color: var(--text-mut); padding: 8px 0;
       border-bottom: 1px solid rgba(255,255,255,0.04);
     }
-    .screen-card img { width: 100%; display: block; }
-    .screen-card-placeholder {
-      height: 220px;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--text-dim); font-size: 12px;
-    }
+    .feat-list li:last-child { border-bottom: none; }
+    .feat-list li .ic { color: var(--accent-lt); font-size: 15px; flex-shrink: 0; }
 
-    /* ── PRICING ───────────────────────────────── */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px; margin-top: 56px; max-width: 720px;
+    /* ── WHAT'S NEW PANEL ── */
+    .panel-new {
+      background: radial-gradient(ellipse 70% 60% at 50% 100%,
+        rgba(124,58,237,0.18) 0%, transparent 65%);
+      text-align: center;
     }
-    .pricing-card {
+    .new-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-top: 48px; width: 100%; max-width: 900px;
+    }
+    .new-card {
+      background: var(--bg-card); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px; padding: 24px;
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.3s;
+    }
+    .new-card:hover { border-color: var(--border); }
+    .new-card.visible { opacity: 1; transform: translateY(0); }
+    .new-card:nth-child(1).visible { transition-delay: 0.1s; }
+    .new-card:nth-child(2).visible { transition-delay: 0.2s; }
+    .new-card:nth-child(3).visible { transition-delay: 0.3s; }
+    .new-card:nth-child(4).visible { transition-delay: 0.4s; }
+    .new-icon { font-size: 28px; margin-bottom: 14px; }
+    .new-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+    .new-card p { font-size: 13px; color: var(--text-mut); line-height: 1.65; }
+
+    /* ── PRICING PANEL ── */
+    .panel-price {
       background: var(--bg-card);
-      border: 1px solid var(--border-lt);
-      border-radius: 20px;
-      padding: 36px 32px;
-      position: relative;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .price-wrap {
+      width: 100%; max-width: 760px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      opacity: 0; transform: perspective(1200px) rotateY(20deg) translateX(80px);
+      transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1),
+                  transform 0.9s cubic-bezier(0.16,1,0.3,1);
+    }
+    .price-wrap.visible {
+      opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0);
+    }
+    @media(max-width:600px) { .price-wrap { grid-template-columns: 1fr; } }
+    .pc {
+      background: #0c0c16; border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px; padding: 32px 28px;
       transition: transform 0.2s;
     }
-    .pricing-card:hover { transform: translateY(-4px); }
-    .pricing-card.pro {
+    .pc:hover { transform: translateY(-4px); }
+    .pc.pro {
       border-color: var(--accent);
-      background: linear-gradient(160deg, #1a1030 0%, #13131f 100%);
-      box-shadow: 0 0 0 1px var(--accent), 0 24px 60px rgba(124,58,237,0.2);
+      background: linear-gradient(160deg, #18102e 0%, #0e0e1c 100%);
+      box-shadow: 0 0 0 1px var(--accent), 0 20px 60px rgba(124,58,237,0.2);
+      position: relative;
     }
-    .pricing-badge {
-      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+    .pro-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
       background: var(--accent); color: #fff;
-      font-size: 11px; font-weight: 800; letter-spacing: 1px;
-      padding: 4px 16px; border-radius: 99px; text-transform: uppercase;
+      font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+      padding: 3px 14px; border-radius: 99px; text-transform: uppercase;
     }
-    .pricing-tier { font-size: 13px; color: var(--text-mut); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
-    .pricing-price {
-      font-size: 48px; font-weight: 900; line-height: 1;
-      margin-bottom: 6px;
-    }
-    .pricing-price sup { font-size: 22px; vertical-align: top; margin-top: 10px; }
-    .pricing-price .old {
-      font-size: 17px; color: var(--text-dim);
-      text-decoration: line-through; font-weight: 400;
-    }
-    .pricing-note { font-size: 12px; color: var(--text-dim); margin-bottom: 28px; }
-    .pricing-note b { color: var(--accent-lt); }
-    .pricing-list { list-style: none; margin-bottom: 32px; }
-    .pricing-list li {
-      display: flex; align-items: flex-start; gap: 10px;
-      font-size: 14px; color: var(--text-mut); padding: 7px 0;
+    .pc-tier { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--text-mut); text-transform: uppercase; margin-bottom: 10px; }
+    .pc-price { font-size: 44px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .pc-price sup { font-size: 20px; vertical-align: top; margin-top: 8px; }
+    .pc-price .old { font-size: 16px; color: var(--text-dim); text-decoration: line-through; font-weight: 400; }
+    .pc-note { font-size: 12px; color: var(--text-dim); margin-bottom: 24px; }
+    .pc-note b { color: var(--accent-lt); }
+    .pc-list { list-style: none; margin-bottom: 28px; }
+    .pc-list li {
+      display: flex; align-items: center; gap: 9px;
+      font-size: 13px; color: var(--text-mut); padding: 6px 0;
       border-bottom: 1px solid rgba(255,255,255,0.04);
     }
-    .pricing-list li:last-child { border-bottom: none; }
-    .pricing-list li .check { color: var(--accent-lt); font-size: 15px; flex-shrink: 0; }
-    .pricing-list li .x { color: var(--text-dim); font-size: 15px; flex-shrink: 0; }
+    .pc-list li:last-child { border-bottom: none; }
+    .ck { color: var(--accent-lt); }
+    .xk { color: var(--text-dim); }
     .btn-buy {
       display: block; width: 100%; text-align: center;
       background: linear-gradient(135deg, #7c3aed, #5b21b6);
-      color: #fff; padding: 14px;
-      border-radius: 10px; font-size: 15px; font-weight: 800;
-      text-decoration: none;
+      color: #fff; padding: 13px; border-radius: 10px;
+      font-size: 14px; font-weight: 800; text-decoration: none;
       box-shadow: 0 8px 24px rgba(124,58,237,0.4);
       transition: transform 0.15s, box-shadow 0.15s;
     }
     .btn-buy:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(124,58,237,0.55); }
-    .btn-free-dl {
+    .btn-free {
       display: block; width: 100%; text-align: center;
-      background: transparent; color: var(--text-mut);
-      padding: 14px; border-radius: 10px;
-      border: 1px solid var(--border-lt);
-      font-size: 15px; font-weight: 700;
-      text-decoration: none;
+      background: transparent; color: var(--text-mut); padding: 13px;
+      border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+      font-size: 14px; font-weight: 700; text-decoration: none;
       transition: border-color 0.2s, color 0.2s;
     }
-    .btn-free-dl:hover { border-color: var(--accent); color: var(--text); }
-    .pricing-footer {
-      margin-top: 40px; text-align: center;
-      font-size: 13px; color: var(--text-dim);
-    }
-    .pricing-footer b { color: var(--text-mut); }
+    .btn-free:hover { border-color: var(--accent); color: var(--text); }
 
-    /* ── PRIVACY BANNER ────────────────────────── */
-    .privacy-banner {
-      margin-top: 60px;
-      background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(91,33,182,0.12));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 36px 40px;
-      display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
-    }
-    .privacy-icon { font-size: 40px; flex-shrink: 0; }
-    .privacy-banner h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .privacy-banner p { font-size: 14px; color: var(--text-mut); max-width: 560px; }
-
-    /* ── TESTIMONIALS ──────────────────────────── */
-    .testimonials-section { background: var(--bg); }
-    .testimonials-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px; margin-top: 48px;
-    }
-    .testimonial-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-lt);
-      border-radius: var(--radius);
-      padding: 30px;
-      transition: border-color 0.3s;
-    }
-    .testimonial-card:hover { border-color: var(--border); }
-    .t-quote {
-      font-size: 32px; color: var(--accent-lt); line-height: 1;
-      margin-bottom: 16px;
-    }
-    .t-text {
-      font-size: 15px; line-height: 1.75; color: var(--text-mut);
-      margin-bottom: 24px; font-style: italic;
-    }
-    .t-author { display: flex; align-items: center; gap: 12px; }
-    .t-avatar {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--accent-dim); border: 2px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; font-weight: 800; color: var(--accent-lt);
-    }
-    .t-name { font-size: 14px; font-weight: 700; }
-    .t-role { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-    .stars { color: #f59e0b; font-size: 13px; margin-bottom: 16px; }
-
-    /* ── PLATFORM BAR ──────────────────────────── */
-    .platform-bar {
-      background: var(--bg-card);
-      border-top: 1px solid var(--border-lt);
-      border-bottom: 1px solid var(--border-lt);
-      padding: 30px 24px; text-align: center;
-    }
-    .platform-bar p { color: var(--text-dim); font-size: 13px; margin-bottom: 14px; letter-spacing: 1px; }
-    .platform-chips { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-    .chip {
-      background: var(--bg-card2); border: 1px solid var(--border-lt);
-      border-radius: 99px; padding: 6px 18px;
-      font-size: 13px; color: var(--text-mut);
-    }
-
-    /* ── FAQ / CTA ─────────────────────────────── */
-    .cta-section { text-align: center; padding: 100px 24px; }
-    .cta-section .section-title { margin-bottom: 16px; }
-    .cta-section .section-sub { margin: 0 auto 40px; }
-    .cta-section .hero-ctas { justify-content: center; }
-    .cta-links { margin-top: 28px; display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
-    .cta-links a { font-size: 14px; color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
-    .cta-links a:hover { color: var(--accent-lt); }
-
-    /* ── FOOTER ────────────────────────────────── */
+    /* ── FOOTER ── */
     footer {
-      background: #080810;
-      border-top: 1px solid var(--border-lt);
-      padding: 40px 24px;
+      background: #050508;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      padding: 32px 24px; text-align: center;
     }
-    .footer-inner {
-      max-width: 1080px; margin: 0 auto;
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 20px;
-    }
-    .footer-logo {
-      font-size: 15px; font-weight: 900; letter-spacing: 3px; color: var(--text-mut);
-    }
-    .footer-links { display: flex; gap: 24px; }
+    .footer-logo { font-size: 14px; font-weight: 900; letter-spacing: 4px; color: var(--text-dim); margin-bottom: 14px; }
+    .footer-links { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
     .footer-links a { font-size: 13px; color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
-    .footer-links a:hover { color: var(--text-mut); }
-    .footer-copy { font-size: 12px; color: var(--text-dim); }
+    .footer-links a:hover { color: var(--accent-lt); }
+    .footer-copy { font-size: 11px; color: #2a2840; }
 
-    /* ── DIVIDER ───────────────────────────────── */
-    .divider {
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--border), transparent);
-      margin: 0;
-    }
-
-    /* ── RESPONSIVE ────────────────────────────── */
-    @media (max-width: 640px) {
-      nav { padding: 0 20px; }
-      .nav-links { display: none; }
-      .screen-row { grid-template-columns: 1fr; }
-      .privacy-banner { flex-direction: column; text-align: center; }
-      .footer-inner { flex-direction: column; text-align: center; }
-      .footer-links { justify-content: center; }
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      position: fixed; top: 0; left: 0; z-index: 300;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-lt));
+      width: 0%; transition: width 0.1s linear;
     }
   </style>
 </head>
 <body>
 
-<!-- ── NAV ──────────────────────────────────────────── -->
+<div class="progress-bar" id="pbar"></div>
+
+<!-- NAV -->
 <nav>
   <a class="nav-logo" href="#">
-    <img src="assets/logo.png" alt="NEXUS NODE" onerror="this.style.display='none'" />
-    NEXUS <span>NODE</span>
+    <img src="assets/logo.png" alt="" onerror="this.style.display='none'" />
+    NEXUS <span class="hl">NODE</span>
   </a>
-  <div class="nav-links">
-    <a href="#features">Features</a>
-    <a href="#screenshots">Screenshots</a>
-    <a href="#pricing">Pricing</a>
-    <a href="https://crystal-epoch-3d5.notion.site/FAQ-NEXUS-NODE-3333aeb440a1808bb726c62cd1366eb9" target="_blank">FAQ</a>
-    <a class="btn-nav" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99</a>
-  </div>
+  <a class="nav-buy" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99</a>
 </nav>
 
-<!-- ── HERO ─────────────────────────────────────────── -->
-<section class="hero">
-  <div class="hero-badge">
-    <div class="dot"></div>
-    v1.1.0 — Now Available
-  </div>
-
-  <h1>Know Your Network.<br><span class="highlight">Own Your Connections.</span></h1>
-
-  <p class="hero-sub">
-    Stop storing contacts. Start using them. NEXUS NODE turns your network into
-    an interactive visual map — so you see relationships, clusters and opportunities at a glance.
-  </p>
-
-  <div class="hero-ctas">
-    <a class="btn-primary" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">
-      ✦ &nbsp;Get PRO — €8.99
-    </a>
-    <a class="btn-secondary" href="#screenshots">See it in action ↓</a>
-  </div>
-  <p class="hero-note">One-time payment · No subscription · <b>Your data stays on your device</b></p>
-
-  <!-- App Window Mockup -->
-  <div class="hero-screenshot">
-    <div class="window-chrome">
-      <div class="window-titlebar">
-        <div class="window-dot r"></div>
-        <div class="window-dot y"></div>
-        <div class="window-dot g"></div>
-        <span class="window-titlebar-text">NEXUS NODE  V 1.1.0</span>
-      </div>
-      <div class="screenshot-tabs">
-        <div class="stab active" onclick="showTab('contacts',this)">Contacts</div>
-        <div class="stab" onclick="showTab('network',this)">Network</div>
-        <div class="stab" onclick="showTab('map',this)">World Map</div>
-      </div>
-      <div class="screenshot-frame active" id="tab-contacts">
-        <img src="assets/screenshot-contacts.png" alt="NEXUS NODE Contacts View"
-             onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'>📸 screenshot-contacts.png</div>'" />
-      </div>
-      <div class="screenshot-frame" id="tab-network">
-        <img src="assets/screenshot-network.png" alt="NEXUS NODE Network View"
-             onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'>📸 screenshot-network.png</div>'" />
-      </div>
-      <div class="screenshot-frame" id="tab-map">
-        <img src="assets/screenshot-map.png" alt="NEXUS NODE World Map"
-             onerror="this.parentElement.innerHTML='<div class=\'screenshot-placeholder\'>📸 screenshot-map.png</div>'" />
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── STATS ─────────────────────────────────────────── -->
-<div class="stats-bar">
-  <div class="stats-inner">
-    <div class="stat">
-      <div class="stat-val">6</div>
-      <div class="stat-lbl">Views & Modules</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val">4</div>
-      <div class="stat-lbl">Languages</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val">€8.99</div>
-      <div class="stat-lbl">One-Time, Forever</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val">0</div>
-      <div class="stat-lbl">Cloud. Zero Data Sharing.</div>
-    </div>
-  </div>
+<!-- SCROLL DOTS -->
+<div class="scroll-dots">
+  <div class="sdot active" onclick="goToPanel(0)"></div>
+  <div class="sdot" onclick="goToPanel(1)"></div>
+  <div class="sdot" onclick="goToPanel(2)"></div>
+  <div class="sdot" onclick="goToPanel(3)"></div>
+  <div class="sdot" onclick="goToPanel(4)"></div>
+  <div class="sdot" onclick="goToPanel(5)"></div>
 </div>
 
-<!-- ── FEATURES ──────────────────────────────────────── -->
-<section id="features">
-  <div class="container">
-    <div class="section-label">What You Get</div>
-    <h2 class="section-title">Everything you need to<br>master your network</h2>
-    <p class="section-sub">Built for people who take their relationships seriously — not just for sales teams.</p>
+<!-- ── PANEL 0: HERO ── -->
+<section class="panel panel-hero" data-idx="0">
+  <div class="hero-badge"><div class="pulse-dot"></div> v1.1.0 — Now Available</div>
+  <h1 class="hero-title">
+    Know Your Network.<br>
+    <span class="grad">Own Your Connections.</span>
+  </h1>
+  <p class="hero-sub">Stop storing contacts. Start using them. NEXUS NODE turns your entire network into a living, visual map.</p>
+  <div class="hero-ctas">
+    <a class="btn-p" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">✦ &nbsp;Get PRO — €8.99</a>
+    <a class="btn-s" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Try for Free</a>
+  </div>
+  <p class="hero-note">One-time payment · No subscription · <b>Data stays on your device</b></p>
+  <a class="scroll-hint" href="#" onclick="goToPanel(1);return false;" style="text-decoration:none;color:inherit;cursor:pointer;">
+    <span>See it in action</span>
 
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🕸️</div>
-        <h3>Interactive Network Graph</h3>
-        <p>See all your contacts as a live network. Clusters, connections, influence scores — all interactive. Find the shortest path between any two people.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🗺️</div>
-        <h3>World Map</h3>
-        <p>Pin your contacts on a real map. Plan travels, set your home base, create wishlists of places to visit — and see who lives near each location.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">👤</div>
-        <h3>Beautiful Contact Cards</h3>
-        <p>Photos, categories, priorities, birthday reminders, social links — every detail in one clean card. Filter by category or priority instantly.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h3>Dashboard & Warmth Score</h3>
-        <p>Your personal CRM dashboard. See who you haven't contacted in a while, upcoming birthdays, open tasks and active events at a glance.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📁</div>
-        <h3>Multiple Profiles</h3>
-        <p>Keep work and personal life separate. Create unlimited profiles — Business, Private, Family — each with its own data, contacts and settings.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔒</div>
-        <h3>100% Private & Offline</h3>
-        <p>All data stays on your device. No cloud, no accounts, no tracking. Optional password protection. Your network is yours — always.</p>
-      </div>
+    <svg width="16" height="20" viewBox="0 0 16 20" fill="none" style="margin-top:4px;">
+      <rect x="5" y="1" width="6" height="10" rx="3" stroke="#a78bfa" stroke-width="1.5"/>
+      <circle cx="8" cy="4" r="1.5" fill="#a78bfa"/>
+      <path d="M4 15l4 4 4-4" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </a>
+</section>
+
+<!-- ── PANEL 1: WORLD MAP ── -->
+<section class="panel panel-map" data-idx="1">
+  <div class="cyl-wrap" id="cyl-1">
+    <!-- Graphic first -->
+    <div class="screen-frame">
+      <div class="bar"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div>
+      <img src="assets/screenshot-map.png" alt="World Map"
+           onerror="this.outerHTML='<div class=\'placeholder\'>📸 World Map</div>'" />
+    </div>
+    <!-- Text fades in after -->
+    <div class="cyl-text">
+      <div class="feat-label">🌍 World Map</div>
+      <h2 class="feat-title">See where your<br><span class="grad">network lives</span></h2>
+      <p class="feat-desc">Pin contacts on a real interactive map. Plan travels, find who's near you, and build your wishlist of places to visit.</p>
+      <ul class="feat-list">
+        <li><span class="ic">📍</span> Auto-geocode every contact's address</li>
+        <li><span class="ic">✈️</span> Travel mode — see who's nearby</li>
+        <li><span class="ic">⭐</span> Wishlist — places you want to visit</li>
+        <li><span class="ic">🏠</span> Set your home base</li>
+      </ul>
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- ── SCREENSHOTS SECTION ───────────────────────────── -->
-<section id="screenshots" class="screenshots-section">
-  <div class="container">
-    <div class="section-label">In Action</div>
-    <h2 class="section-title">See every angle</h2>
-    <p class="section-sub">Three powerful views. One coherent app. Built with obsessive attention to detail.</p>
-
-    <div class="screen-row">
-      <div class="screen-card">
-        <div class="screen-card-label">⬡ Network Graph</div>
-        <img src="assets/screenshot-network.png" alt="Network Graph"
-             onerror="this.parentElement.innerHTML+='<div class=\'screen-card-placeholder\'>📸 screenshot-network.png</div>';this.remove()" />
-      </div>
-      <div class="screen-card">
-        <div class="screen-card-label">👤 Contact Cards</div>
-        <img src="assets/screenshot-contacts.png" alt="Contact Cards"
-             onerror="this.parentElement.innerHTML+='<div class=\'screen-card-placeholder\'>📸 screenshot-contacts.png</div>';this.remove()" />
-      </div>
-      <div class="screen-card" style="grid-column: 1 / -1;">
-        <div class="screen-card-label">🌍 World Map</div>
-        <img src="assets/screenshot-map.png" alt="World Map"
-             onerror="this.parentElement.innerHTML+='<div class=\'screen-card-placeholder\'>📸 screenshot-map.png</div>';this.remove()" />
-      </div>
+<!-- ── PANEL 2: NETWORK GRAPH ── -->
+<section class="panel panel-network" data-idx="2">
+  <div class="cyl-wrap from-left" id="cyl-2">
+    <div class="cyl-text">
+      <div class="feat-label">⬡ Network Graph</div>
+      <h2 class="feat-title">Visualize your<br><span class="grad">entire world</span></h2>
+      <p class="feat-desc">See all relationships at once. Clusters, influence scores, hidden connections — all interactive, all live.</p>
+      <ul class="feat-list">
+        <li><span class="ic">🕸️</span> Interactive force-directed graph</li>
+        <li><span class="ic">📊</span> Influence score per contact</li>
+        <li><span class="ic">🔗</span> Shortest path between any 2 people</li>
+        <li><span class="ic">🎨</span> Color-coded clusters</li>
+      </ul>
     </div>
+    <div class="screen-frame">
+      <div class="bar"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div>
+      <img src="assets/screenshot-network.png" alt="Network Graph"
+           onerror="this.outerHTML='<div class=\'placeholder\'>📸 Network Graph</div>'" />
+    </div>
+  </div>
+</section>
 
-    <!-- Privacy highlight -->
-    <div class="privacy-banner">
-      <div class="privacy-icon">🔐</div>
+<!-- ── PANEL 3: CONTACTS ── -->
+<section class="panel panel-contacts" data-idx="3">
+  <div class="cyl-wrap" id="cyl-3">
+    <div class="screen-frame">
+      <div class="bar"><div class="dot-r"></div><div class="dot-y"></div><div class="dot-g"></div></div>
+      <img src="assets/screenshot-contacts.png" alt="Contacts"
+           onerror="this.outerHTML='<div class=\'placeholder\'>📸 Contacts</div>'" />
+    </div>
+    <div class="cyl-text">
+      <div class="feat-label">👤 Contacts</div>
+      <h2 class="feat-title">Every detail.<br><span class="grad">One clean card.</span></h2>
+      <p class="feat-desc">Photos, categories, priorities, social links, birthdays — all in one beautiful card. Filter and find instantly.</p>
+      <ul class="feat-list">
+        <li><span class="ic">📷</span> Photos & color avatars</li>
+        <li><span class="ic">🔥</span> Warmth score — who's going cold</li>
+        <li><span class="ic">🎂</span> Birthday reminders</li>
+        <li><span class="ic">🏷️</span> Categories & priorities</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── PANEL 4: WHAT'S NEW IN v1.1 ── -->
+<section class="panel panel-new" data-idx="4">
+  <div style="text-align:center;width:100%;max-width:900px;">
+    <div class="feat-label" style="justify-content:center;display:flex;">🆕 New in v1.1</div>
+    <h2 class="feat-title" style="margin-bottom:12px;">What's new &amp; improved</h2>
+    <p style="color:var(--text-mut);font-size:15px;max-width:480px;margin:0 auto;">Every update brings NEXUS NODE closer to the perfect network tool. Here's what landed in v1.1.</p>
+  </div>
+  <div class="new-grid" id="new-grid">
+    <div class="new-card">
+      <div class="new-icon">⚡</div>
+      <h3>Instant Splash Screen</h3>
+      <p>App loads immediately. Smooth progress bar from the first frame — no delay, no blank screen.</p>
+    </div>
+    <div class="new-card">
+      <div class="new-icon">📊</div>
+      <h3>Dashboard No Flicker</h3>
+      <p>Charts no longer reload every 60 seconds. Smart hash-guard — only updates when data actually changes.</p>
+    </div>
+    <div class="new-card">
+      <div class="new-icon">🗺️</div>
+      <h3>Map Sidebar Fix</h3>
+      <p>World Map sidebar now has proper spacing. Clean gap between map and wishlist panel.</p>
+    </div>
+    <div class="new-card">
+      <div class="new-icon">🔒</div>
+      <h3>Code Audit</h3>
+      <p>Deep audit of the full codebase. Fixed hardcoded versions, tab order, import errors and more.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── PANEL 5: PRICING ── -->
+<section class="panel panel-price" data-idx="5">
+  <div style="text-align:center;margin-bottom:48px;width:100%;max-width:760px;">
+    <div class="feat-label" style="justify-content:center;display:flex;">Pricing</div>
+    <h2 class="feat-title">Simple. One-time. Forever.</h2>
+  </div>
+  <div class="price-wrap" id="pwrap">
+    <div class="pc">
+      <div class="pc-tier">Free</div>
+      <div class="pc-price">€0</div>
+      <div class="pc-note">Always free, forever</div>
+      <ul class="pc-list">
+        <li><span class="ck">✓</span> Up to 15 contacts</li>
+        <li><span class="ck">✓</span> Network graph</li>
+        <li><span class="ck">✓</span> World Map</li>
+        <li><span class="xk">✗</span> Import / Export</li>
+        <li><span class="xk">✗</span> Multiple profiles</li>
+      </ul>
+      <a class="btn-free" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Download Free</a>
+    </div>
+    <div class="pc pro">
+      <div class="pro-badge">LAUNCH PRICE</div>
+      <div class="pc-tier">PRO</div>
+      <div class="pc-price"><sup>€</sup>8.99 <span class="old">€12.99</span></div>
+      <div class="pc-note">Regular price June 1st · <b>Save 30%</b></div>
+      <ul class="pc-list">
+        <li><span class="ck">✓</span> Unlimited contacts</li>
+        <li><span class="ck">✓</span> Import / Export</li>
+        <li><span class="ck">✓</span> Multiple profiles</li>
+        <li><span class="ck">✓</span> Backup & PDF export</li>
+        <li><span class="ck">✓</span> Priority support</li>
+      </ul>
+      <a class="btn-buy" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99 →</a>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--text-dim);margin-top:28px;text-align:center;">
+    One-time payment · 1 device · No subscription<br>
+    <a href="mailto:nexusnode.contact@gmail.com" style="color:var(--text-dim);text-decoration:none;margin-top:8px;display:inline-block;">✉ nexusnode.contact@gmail.com</a>
+  </p>
+</section>
+
+<!-- ── IMPRESSUM ── -->
+<section style="background:#05050a;border-top:1px solid rgba(255,255,255,0.04);padding:60px 24px;">
+  <div style="max-width:600px;margin:0 auto;">
+    <p style="font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#4a4768;margin-bottom:24px;">Impressum / Legal Notice</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;font-size:13px;color:#4a4768;line-height:1.8;">
       <div>
-        <h3>Your data never leaves your device</h3>
-        <p>NEXUS NODE stores everything locally on your machine — in <code style="color:var(--accent-lt);background:var(--accent-dim);padding:2px 7px;border-radius:4px;">%APPDATA%\NexusNode</code>.
-        No account needed. No internet required after activation. No one sees your contacts but you.</p>
+        <p style="color:#6e6a85;font-weight:700;margin-bottom:8px;">Contact</p>
+        <p>nexusnode.contact@gmail.com</p>
+        <p style="margin-top:12px;font-size:11px;">For license issues, refunds or support — we usually reply within 24h.</p>
+      </div>
+      <div>
+        <p style="color:#6e6a85;font-weight:700;margin-bottom:8px;">Product</p>
+        <p>NEXUS NODE v1.1.0</p>
+        <p>Windows Desktop Application</p>
+        <p>Sold via Gumroad</p>
       </div>
     </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ── PRICING ────────────────────────────────────────── -->
-<section id="pricing">
-  <div class="container">
-    <div class="section-label">Pricing</div>
-    <h2 class="section-title">Simple. One-time. Forever.</h2>
-    <p class="section-sub">No subscriptions. No hidden fees. Pay once, use forever on your device.</p>
-
-    <div class="pricing-grid">
-
-      <!-- FREE -->
-      <div class="pricing-card">
-        <div class="pricing-tier">Free</div>
-        <div class="pricing-price">€0</div>
-        <p class="pricing-note">Always free, no time limit</p>
-        <ul class="pricing-list">
-          <li><span class="check">✓</span> Up to 15 contacts</li>
-          <li><span class="check">✓</span> Network graph</li>
-          <li><span class="check">✓</span> World Map</li>
-          <li><span class="check">✓</span> 2 clusters</li>
-          <li><span class="x">✗</span> Import / Export</li>
-          <li><span class="x">✗</span> Multiple profiles</li>
-          <li><span class="x">✗</span> Backup</li>
-        </ul>
-        <a class="btn-free-dl" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Download Free</a>
-      </div>
-
-      <!-- PRO -->
-      <div class="pricing-card pro">
-        <div class="pricing-badge">LAUNCH PRICE</div>
-        <div class="pricing-tier">PRO</div>
-        <div class="pricing-price">
-          <sup>€</sup>8.99 &nbsp;<span class="old">€12.99</span>
-        </div>
-        <p class="pricing-note">Regular price from June 1st — <b>Save 30% now</b></p>
-        <ul class="pricing-list">
-          <li><span class="check">✓</span> Unlimited contacts</li>
-          <li><span class="check">✓</span> Unlimited clusters</li>
-          <li><span class="check">✓</span> Import vCard / CSV</li>
-          <li><span class="check">✓</span> Export & Backup</li>
-          <li><span class="check">✓</span> Multiple profiles</li>
-          <li><span class="check">✓</span> PDF export</li>
-          <li><span class="check">✓</span> Priority support</li>
-        </ul>
-        <a class="btn-buy" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">
-          Get PRO — €8.99 →
-        </a>
-      </div>
-
-    </div>
-
-    <p class="pricing-footer">
-      <b>One-time payment · License valid for 1 device · No subscription</b><br>
-      <span style="font-size:12px;margin-top:6px;display:block;">
-        After purchase you receive a license key by email.<br>
-        Open NEXUS NODE → Settings → License → Enter key → Done!
-      </span>
+    <p style="font-size:11px;color:#2e2c42;margin-top:32px;border-top:1px solid rgba(255,255,255,0.03);padding-top:20px;">
+      This software is provided "as is". All data is stored locally on the user's device. No personal data is collected or transmitted by NEXUS NODE.
     </p>
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- ── PLATFORM ───────────────────────────────────────── -->
-<div class="platform-bar">
-  <p>AVAILABLE FOR</p>
-  <div class="platform-chips">
-    <span class="chip">🪟 Windows 10 / 11</span>
-    <span class="chip">🇬🇧 English</span>
-    <span class="chip">🇩🇪 Deutsch</span>
-    <span class="chip">🇪🇸 Español</span>
-    <span class="chip">🇫🇷 Français</span>
-    <span class="chip">🍎 Mac — coming soon</span>
-  </div>
-</div>
-
-<!-- ── TESTIMONIALS ───────────────────────────────────── -->
-<section class="testimonials-section">
-  <div class="container">
-    <div class="section-label">What People Say</div>
-    <h2 class="section-title">Real feedback from beta testers</h2>
-
-    <div class="testimonials-grid">
-      <div class="testimonial-card">
-        <div class="stars">★★★★★</div>
-        <div class="t-quote">"</div>
-        <p class="t-text">I've tried spreadsheets, notes apps, everything. Nothing gave me a real picture of my network until NEXUS NODE. One payment, no subscription, no compromise.</p>
-        <div class="t-author">
-          <div class="t-avatar">S</div>
-          <div>
-            <div class="t-name">Sarah K.</div>
-            <div class="t-role">Business Development 🇨🇦</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial-card">
-        <div class="stars">★★★★★</div>
-        <div class="t-quote">"</div>
-        <p class="t-text">Ich bin kein Vertriebler — ich will einfach meine Freundschaften besser pflegen. Mit NEXUS NODE sehe ich sofort wer "kühlt". Das hat meine Beziehungen wirklich verändert. Und das für einmalig 8,99€.</p>
-        <div class="t-author">
-          <div class="t-avatar">J</div>
-          <div>
-            <div class="t-name">Jonas M.</div>
-            <div class="t-role">Student 🇦🇹</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── FINAL CTA ───────────────────────────────────────── -->
-<section class="cta-section">
-  <div class="container">
-    <div class="section-label">Ready?</div>
-    <h2 class="section-title">Stop storing contacts.<br>Start using your network.</h2>
-    <p class="section-sub">Join people who finally have clarity about their relationships. One-time €8.99. Yours forever.</p>
-    <div class="hero-ctas">
-      <a class="btn-primary" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">✦ &nbsp;Get PRO — €8.99</a>
-      <a class="btn-secondary" href="https://crystal-epoch-3d5.notion.site/FAQ-NEXUS-NODE-3333aeb440a1808bb726c62cd1366eb9" target="_blank">Read FAQ →</a>
-    </div>
-    <div class="cta-links">
-      <a href="mailto:nexusnode.contact@gmail.com">✉ nexusnode.contact@gmail.com</a>
-      <a href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">⬡ Gumroad</a>
-      <a href="https://crystal-epoch-3d5.notion.site/FAQ-NEXUS-NODE-3333aeb440a1808bb726c62cd1366eb9" target="_blank">❓ FAQ</a>
-    </div>
-  </div>
-</section>
-
-<!-- ── FOOTER ─────────────────────────────────────────── -->
 <footer>
-  <div class="footer-inner">
-    <div class="footer-logo">NEXUS NODE</div>
-    <div class="footer-links">
-      <a href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Buy on Gumroad</a>
-      <a href="https://crystal-epoch-3d5.notion.site/FAQ-NEXUS-NODE-3333aeb440a1808bb726c62cd1366eb9" target="_blank">FAQ</a>
-      <a href="mailto:nexusnode.contact@gmail.com">Contact</a>
-    </div>
-    <div class="footer-copy">© 2026 NEXUS NODE · All rights reserved</div>
+  <div class="footer-logo">NEXUS NODE</div>
+  <div class="footer-links">
+    <a href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Buy on Gumroad</a>
+    <a href="https://crystal-epoch-3d5.notion.site/FAQ-NEXUS-NODE-3333aeb440a1808bb726c62cd1366eb9" target="_blank">FAQ</a>
+    <a href="mailto:nexusnode.contact@gmail.com">Contact</a>
   </div>
+  <div class="footer-copy">© 2026 NEXUS NODE · All rights reserved</div>
 </footer>
 
 <script>
-  function showTab(name, el) {
-    document.querySelectorAll('.screenshot-frame').forEach(f => f.classList.remove('active'));
-    document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
-    document.getElementById('tab-' + name).classList.add('active');
-    el.classList.add('active');
+  const panels = document.querySelectorAll('.panel');
+  const dots   = document.querySelectorAll('.sdot');
+
+  // ── Scroll progress bar ──
+  window.addEventListener('scroll', () => {
+    const s = document.documentElement.scrollTop;
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    document.getElementById('pbar').style.width = (s / h * 100) + '%';
+  });
+
+  // ── Scroll to panel ──
+  function goToPanel(idx) {
+    panels[idx].scrollIntoView({ behavior: 'smooth' });
   }
-  // Auto-cycle screenshots every 4s
-  const tabs = ['contacts','network','map'];
-  let ti = 0;
-  setInterval(() => {
-    ti = (ti + 1) % tabs.length;
-    const tabEl = document.querySelectorAll('.stab')[ti];
-    showTab(tabs[ti], tabEl);
-  }, 4000);
+
+  // ── Intersection Observer ──
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      const idx = parseInt(e.target.dataset.idx);
+
+      // Update dots
+      if (e.isIntersecting) {
+        dots.forEach(d => d.classList.remove('active'));
+        dots[idx].classList.add('active');
+      }
+
+      // Cylinder panels
+      const cyl = e.target.querySelector('.cyl-wrap');
+      if (cyl) {
+        if (e.isIntersecting) cyl.classList.add('visible');
+      }
+
+      // New cards
+      if (e.target.classList.contains('panel-new') && e.isIntersecting) {
+        document.querySelectorAll('.new-card').forEach(c => c.classList.add('visible'));
+      }
+
+      // Pricing
+      const pw = document.getElementById('pwrap');
+      if (e.target.classList.contains('panel-price') && pw && e.isIntersecting) {
+        pw.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.3 });
+
+  panels.forEach(p => io.observe(p));
 </script>
 </body>
 </html>
