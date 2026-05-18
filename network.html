@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Network Graph — NEXUS NODE</title>
+  <meta name="description" content="See all your relationships at once. Force-directed graph, influence scores, shortest paths, clusters." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Network Graph — NEXUS NODE" />
+  <meta property="og:description" content="Visualize your entire network. Force-directed graph, influence scores, shortest paths, clusters — all local." />
+  <meta property="og:image" content="https://getnexusnode.github.io/nexus-node-site/assets/og-image.png" />
+  <meta property="og:url" content="https://getnexusnode.github.io/nexus-node-site/network.html" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/logo.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent:     #7c3aed;
+      --accent-lt:  #a78bfa;
+      --accent-dim: rgba(124,58,237,0.14);
+      --bg:         #08080f;
+      --bg-card:    #10101a;
+      --bg-card2:   #0d0d18;
+      --border:     rgba(124,58,237,0.25);
+      --border-lt:  rgba(255,255,255,0.06);
+      --text:       #ece9f8;
+      --text-mut:   #8a87aa;
+      --text-dim:   #4a4768;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Segoe UI','Helvetica Neue',system-ui,sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+    .progress-bar { position: fixed; top: 0; left: 0; z-index: 300; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-lt)); width: 0%; transition: width 0.1s linear; }
+
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; background: rgba(8,8,15,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-sep { color: var(--text-dim); font-size: 13px; opacity: 0.4; }
+    .nav-current { font-size: 13px; font-weight: 700; color: var(--text-mut); }
+    .nav-logo { font-size: 15px; font-weight: 900; letter-spacing: 3px; color: var(--text); text-decoration: none; }
+    .nav-logo .hl { color: var(--accent-lt); }
+    .nav-buy { background: var(--accent); color: #fff; padding: 7px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; transition: background 0.2s, transform 0.15s; }
+    .nav-buy:hover { background: #6d28d9; transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 100px 24px 80px; position: relative; overflow: hidden; background: #07060f; }
+    #hero-canvas { position: absolute; inset: 0; z-index: 0; }
+    .hero::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 30%; background: linear-gradient(to top, var(--bg), transparent); z-index: 1; pointer-events: none; }
+    .hero-inner { position: relative; z-index: 2; max-width: 760px; }
+    .feat-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-dim); border: 1px solid var(--border); color: var(--accent-lt); font-size: 11px; font-weight: 700; letter-spacing: 2px; padding: 5px 16px; border-radius: 99px; margin-bottom: 28px; text-transform: uppercase; }
+    .hero-title { font-size: clamp(38px, 7vw, 80px); font-weight: 900; line-height: 1.05; letter-spacing: -2px; margin-bottom: 20px; }
+    .hero-title .grad { background: linear-gradient(135deg, #c4b5fd 0%, var(--accent) 60%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero-sub { font-size: clamp(15px,2vw,18px); color: var(--text-mut); max-width: 520px; margin: 0 auto 44px; line-height: 1.75; }
+    .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-p { background: linear-gradient(135deg,#7c3aed,#5b21b6); color:#fff; padding:14px 36px; border-radius:12px; font-size:15px; font-weight:800; text-decoration:none; box-shadow:0 10px 36px rgba(124,58,237,0.42); transition:transform 0.15s,box-shadow 0.15s; }
+    .btn-p:hover { transform:translateY(-2px); box-shadow:0 14px 44px rgba(124,58,237,0.58); }
+    .btn-s { background:transparent; color:var(--text-mut); padding:14px 26px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); font-size:15px; font-weight:600; text-decoration:none; transition:border-color 0.2s,color 0.2s; }
+    .btn-s:hover { border-color:var(--accent); color:var(--text); }
+
+    /* ── SCREENSHOT ── */
+    .screenshot-hero { padding: 0 24px 80px; display: flex; justify-content: center; }
+    .win-frame-anim { width: 100%; max-width: 920px; opacity: 0; transform: translateY(40px); transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1); }
+    .win-frame-anim.visible { opacity: 1; transform: translateY(0); }
+    .win-frame { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 28px 72px rgba(0,0,0,0.55); background: var(--bg-card); }
+    .win-bar { height: 32px; background: #161622; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; }
+    .win-btns { display: flex; gap: 7px; }
+    .win-btn { width: 12px; height: 12px; border-radius: 50%; }
+    .win-btn:nth-child(1) { background: #ff5f57; }
+    .win-btn:nth-child(2) { background: #febc2e; }
+    .win-btn:nth-child(3) { background: #28c840; }
+    .win-title { font-size: 11px; color: #5a5878; letter-spacing: 0.5px; position: absolute; left: 50%; transform: translateX(-50%); }
+    .win-frame img { width: 100%; display: block; }
+    .img-placeholder { height: 340px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 13px; background: var(--bg-card2); }
+
+    .section-label { font-size: 10px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--accent-lt); margin-bottom: 12px; }
+    .section-title { font-size: clamp(28px,4vw,46px); font-weight: 900; line-height: 1.1; margin-bottom: 16px; }
+    .section-title .grad { background: linear-gradient(135deg, var(--accent-lt), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .section-sub { font-size: 16px; color: var(--text-mut); line-height: 1.7; max-width: 540px; }
+    .section-inner { max-width: 1080px; margin: 0 auto; }
+
+    /* ── FEAT GRID ── */
+    .feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 60px; }
+    @media(max-width:640px) { .feat-grid { grid-template-columns: 1fr; } }
+    .feat-card { background: var(--bg-card); border: 1px solid var(--border-lt); border-radius: 18px; padding: 32px; opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.2s; }
+    .feat-card.visible { opacity: 1; transform: translateY(0); }
+    .feat-card:hover { border-color: rgba(124,58,237,0.35); }
+    .feat-card-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; color: var(--accent-lt); margin-bottom: 18px; }
+    .feat-card h3 { font-size: 17px; font-weight: 800; margin-bottom: 10px; }
+    .feat-card p { font-size: 14px; color: var(--text-mut); line-height: 1.7; }
+
+    /* ── DETAIL ROW ── */
+    .detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding: 80px 24px; max-width: 1080px; margin: 0 auto; opacity: 0; transform: translateX(40px); transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1); }
+    .detail-row.from-left { transform: translateX(-40px); }
+    .detail-row.visible { opacity: 1; transform: translateX(0); }
+    @media(max-width:720px) { .detail-row { grid-template-columns: 1fr; gap: 40px; } }
+    .detail-text .label { font-size: 10px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--accent-lt); margin-bottom: 12px; }
+    .detail-text h2 { font-size: clamp(22px,3.2vw,34px); font-weight: 900; margin-bottom: 14px; line-height: 1.2; }
+    .detail-text h2 .grad { background: linear-gradient(135deg, var(--accent-lt), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .detail-text p { font-size: 15px; color: var(--text-mut); line-height: 1.75; margin-bottom: 20px; }
+    .detail-list { list-style: none; }
+    .detail-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; color: var(--text-mut); padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .detail-list li:last-child { border-bottom: none; }
+    .ic { color: var(--accent-lt); flex-shrink: 0; margin-top: 1px; display: flex; }
+    .divider { height: 1px; background: var(--border-lt); max-width: 1080px; margin: 0 auto; }
+
+    /* ── LIVE CANVAS DEMO ── */
+    .canvas-demo { background: var(--bg-card); border: 1px solid var(--border-lt); border-radius: 18px; overflow: hidden; position: relative; height: 320px; }
+    #demo-canvas { width: 100%; height: 100%; display: block; }
+    .canvas-demo-label { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); white-space: nowrap; }
+
+    /* ── INFLUENCE BARS ── */
+    .influence-visual { background: var(--bg-card); border: 1px solid var(--border-lt); border-radius: 18px; padding: 28px; }
+    .inf-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .inf-name { font-size: 13px; color: var(--text-mut); width: 80px; flex-shrink: 0; }
+    .inf-track { flex: 1; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+    .inf-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-lt)); transition: width 1.4s cubic-bezier(0.16,1,0.3,1); width: 0%; }
+    .inf-score { font-size: 12px; font-weight: 700; color: var(--accent-lt); width: 36px; text-align: right; }
+
+    /* ── RELATED ── */
+    .related { padding: 80px 24px; max-width: 1080px; margin: 0 auto; }
+    .related-title { font-size: 12px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 28px; }
+    .related-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:580px) { .related-grid { grid-template-columns: 1fr; } }
+    .related-card { background: var(--bg-card); border: 1px solid var(--border-lt); border-radius: 16px; padding: 24px 28px; text-decoration: none; color: var(--text); display: flex; align-items: center; justify-content: space-between; transition: border-color 0.2s, transform 0.15s; }
+    .related-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .related-card-left { display: flex; align-items: center; gap: 16px; }
+    .related-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; color: var(--accent-lt); flex-shrink: 0; }
+    .related-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 3px; }
+    .related-card p { font-size: 12px; color: var(--text-mut); }
+    .related-arrow { color: var(--text-dim); font-size: 18px; }
+
+    .cta-section { background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(124,58,237,0.18) 0%, transparent 70%); padding: 100px 24px; text-align: center; }
+    .cta-inner { max-width: 580px; margin: 0 auto; }
+    .cta-label { font-size: 10px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--accent-lt); margin-bottom: 16px; }
+    .cta-title { font-size: clamp(28px,4.5vw,48px); font-weight: 900; margin-bottom: 14px; line-height: 1.1; }
+    .cta-sub { font-size: 15px; color: var(--text-mut); margin-bottom: 36px; line-height: 1.7; }
+    .cta-note { font-size: 12px; color: var(--text-dim); margin-top: 14px; }
+
+    footer { background: #050508; border-top: 1px solid rgba(255,255,255,0.04); padding: 28px 24px; text-align: center; }
+    .footer-logo { font-size: 13px; font-weight: 900; letter-spacing: 4px; color: var(--text-dim); margin-bottom: 12px; }
+    .footer-links { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .footer-links a { font-size: 12px; color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--accent-lt); }
+    .footer-copy { font-size: 11px; color: #1e1c30; }
+  </style>
+</head>
+<body>
+
+<div class="progress-bar" id="pbar"></div>
+
+<nav>
+  <div class="nav-left">
+    <a class="nav-logo" href="index.html" style="display:flex;align-items:center;gap:7px;text-decoration:none;">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="color:var(--text-dim)"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      NEXUS <span class="hl">NODE</span>
+    </a>
+    <span class="nav-sep">/</span>
+    <span class="nav-current">Network Graph</span>
+  </div>
+  <a class="nav-buy" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-inner">
+    <div class="feat-badge">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2" fill="currentColor"/><circle cx="2" cy="3" r="1.5" fill="currentColor"/><circle cx="12" cy="3" r="1.5" fill="currentColor"/><circle cx="2" cy="11" r="1.5" fill="currentColor"/><circle cx="12" cy="11" r="1.5" fill="currentColor"/><path d="M3.5 4L6 6M8 8l2.5 2M10.5 4L8 6M6 8l-2.5 2" stroke="currentColor" stroke-width="1.2"/></svg>
+      Network Graph
+    </div>
+    <h1 class="hero-title">Visualize your<br><span class="grad">entire world.</span></h1>
+    <p class="hero-sub">Every connection you have, rendered as a living graph. See clusters form, find hidden paths, and discover who holds your network together.</p>
+    <div class="hero-cta">
+      <a class="btn-p" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99</a>
+      <a class="btn-s" href="index.html">← Back to overview</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── MAIN SCREENSHOT ── -->
+<div class="screenshot-hero">
+  <div class="win-frame win-frame-anim" id="ss-frame">
+    <div class="win-bar">
+      <div class="win-btns"><div class="win-btn"></div><div class="win-btn"></div><div class="win-btn"></div></div>
+      <span class="win-title">NEXUS NODE — Network Graph</span>
+      <div style="width:44px"></div>
+    </div>
+    <img src="assets/screenshot-network.png" alt="Network Graph" onerror="this.outerHTML='<div class=img-placeholder>screenshot-network.png</div>'" />
+  </div>
+</div>
+
+<!-- ── FEATURE GRID ── -->
+<section style="background:var(--bg-card);padding:80px 24px;">
+  <div class="section-inner">
+    <div>
+      <div class="section-label">Network Graph</div>
+      <h2 class="section-title">Your relationships,<br><span class="grad">made visible.</span></h2>
+      <p class="section-sub">The graph builds itself. Every contact is a node — connections form based on shared categories, relationships and more.</p>
+    </div>
+    <div class="feat-grid" id="feat-grid">
+      <div class="feat-card">
+        <div class="feat-card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="3.5" stroke="currentColor" stroke-width="1.4"/><circle cx="3" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="17" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="3" cy="16" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 5L8 8M12 12L15.5 15M15.5 5L12 8M8 12L4.5 15" stroke="currentColor" stroke-width="1.2"/></svg>
+        </div>
+        <h3>Force-Directed Layout</h3>
+        <p>Nodes repel and attract based on connection strength. Tight clusters of close contacts naturally pull together — loose acquaintances stay at the edges.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="11" width="4" height="8" rx="1" fill="currentColor"/><rect x="8" y="7" width="4" height="12" rx="1" fill="currentColor"/><rect x="15" y="2" width="4" height="17" rx="1" fill="currentColor"/></svg>
+        </div>
+        <h3>Influence Score</h3>
+        <p>NEXUS NODE calculates how influential each person is in your network — based on connections, warmth, and centrality. Bigger node = higher influence.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="4" cy="10" r="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="16" cy="10" r="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="4" r="2" fill="currentColor" opacity=".5"/><path d="M6.5 10h7M10 6v2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Shortest Path</h3>
+        <p>Pick any two people in your network. NEXUS NODE highlights the shortest connection path between them — useful for warm introductions.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="5" cy="5" r="3.5" fill="currentColor" opacity=".65"/><circle cx="15" cy="5" r="3.5" fill="currentColor" opacity=".45"/><circle cx="10" cy="14" r="3.5" fill="currentColor" opacity=".85"/></svg>
+        </div>
+        <h3>Color Clusters</h3>
+        <p>Contacts in the same category automatically cluster together with a shared color. See your Work, Family and Friends groups form right before your eyes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── LIVE DEMO ── -->
+<div class="detail-row" id="detail-1">
+  <div class="detail-text">
+    <div class="label">Interactive Graph</div>
+    <h2>Drag, zoom,<br><span class="grad">explore.</span></h2>
+    <p>The graph is fully interactive. Drag any node to reposition it. Zoom in on dense clusters. Click a node to highlight its direct connections and see the person's card.</p>
+    <ul class="detail-list">
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Drag nodes freely to rearrange</li>
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Scroll to zoom in and out</li>
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Click node → highlight all direct edges</li>
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Filter graph by category in one click</li>
+    </ul>
+  </div>
+  <div class="canvas-demo" id="canvas-demo">
+    <canvas id="demo-canvas"></canvas>
+    <span class="canvas-demo-label">Live preview — your graph looks like this</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ── INFLUENCE ── -->
+<div class="detail-row from-left" id="detail-2">
+  <div class="influence-visual" id="influence-visual">
+    <div style="font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Influence Score</div>
+    <div style="font-size:13px;color:var(--text-mut);margin-bottom:22px;">Who holds your network together</div>
+    <div class="inf-row"><span class="inf-name">Sarah K.</span><div class="inf-track"><div class="inf-fill" data-v="92"></div></div><span class="inf-score">92</span></div>
+    <div class="inf-row"><span class="inf-name">Mark D.</span><div class="inf-track"><div class="inf-fill" data-v="78"></div></div><span class="inf-score">78</span></div>
+    <div class="inf-row"><span class="inf-name">Tom R.</span><div class="inf-track"><div class="inf-fill" data-v="65"></div></div><span class="inf-score">65</span></div>
+    <div class="inf-row"><span class="inf-name">Alex M.</span><div class="inf-track"><div class="inf-fill" data-v="44"></div></div><span class="inf-score">44</span></div>
+    <div class="inf-row"><span class="inf-name">Jana P.</span><div class="inf-track"><div class="inf-fill" data-v="28"></div></div><span class="inf-score">28</span></div>
+  </div>
+  <div class="detail-text">
+    <div class="label">Influence Score</div>
+    <h2>Who really matters<br><span class="grad">in your network?</span></h2>
+    <p>Not all connections are equal. Some people bridge multiple clusters — remove them and your network falls apart. NEXUS NODE surfaces these key connectors so you can nurture them.</p>
+    <ul class="detail-list">
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Score based on centrality in the graph</li>
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Node size scales with influence score</li>
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Sort contact list by influence</li>
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Updates live when you add contacts</li>
+    </ul>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ── RELATED ── -->
+<div class="related">
+  <div class="related-title">Explore other features</div>
+  <div class="related-grid">
+    <a class="related-card" href="world-map.html">
+      <div class="related-card-left">
+        <div class="related-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.4"/><path d="M10 2c-2 2.5-3 5-3 8s1 5.5 3 8M10 2c2 2.5 3 5 3 8s-1 5.5-3 8M2 10h16" stroke="currentColor" stroke-width="1.3"/></svg>
+        </div>
+        <div><h3>World Map</h3><p>See where your network lives</p></div>
+      </div>
+      <span class="related-arrow">›</span>
+    </a>
+    <a class="related-card" href="contacts.html">
+      <div class="related-card-left">
+        <div class="related-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 17c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <div><h3>Contacts</h3><p>Every detail in one beautiful card</p></div>
+      </div>
+      <span class="related-arrow">›</span>
+    </a>
+  </div>
+</div>
+
+<!-- ── CTA ── -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <div class="cta-label">Ready to start?</div>
+    <h2 class="cta-title">See your network graph today.</h2>
+    <p class="cta-sub">One-time €8.99. No subscription. Your data stays on your device — always.</p>
+    <a class="btn-p" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99 →</a>
+    <p class="cta-note">One-time payment · Windows 10/11 · Mac coming in v1.2</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">NEXUS NODE</div>
+  <div class="footer-links">
+    <a href="index.html">Overview</a>
+    <a href="world-map.html">World Map</a>
+    <a href="network.html">Network Graph</a>
+    <a href="contacts.html">Contacts</a>
+    <a href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Buy on Gumroad</a>
+    <a href="mailto:nexusnode.contact@gmail.com">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 NEXUS NODE · All rights reserved</div>
+</footer>
+
+<script>
+window.addEventListener('scroll', () => {
+  const s = document.documentElement.scrollTop;
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  document.getElementById('pbar').style.width = (s / h * 100) + '%';
+});
+
+// ── Hero canvas — dense glowing network ───────────────
+const hc = document.getElementById('hero-canvas');
+const hCtx = hc.getContext('2d');
+let hNodes = [], hW, hH;
+function resizeHero() {
+  hW = hc.width = hc.parentElement.offsetWidth;
+  hH = hc.height = hc.parentElement.offsetHeight;
+}
+resizeHero();
+window.addEventListener('resize', resizeHero);
+for (let i = 0; i < 55; i++) hNodes.push({ x:Math.random()*hW, y:Math.random()*hH, vx:(Math.random()-.5)*.4, vy:(Math.random()-.5)*.4, r:Math.random()*2.8+1, op:Math.random()*.55+.25 });
+function animHero() {
+  hCtx.clearRect(0,0,hW,hH);
+  for(let i=0;i<hNodes.length;i++) for(let j=i+1;j<hNodes.length;j++){
+    const dx=hNodes[i].x-hNodes[j].x,dy=hNodes[i].y-hNodes[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<150){hCtx.beginPath();hCtx.moveTo(hNodes[i].x,hNodes[i].y);hCtx.lineTo(hNodes[j].x,hNodes[j].y);hCtx.strokeStyle=`rgba(167,139,250,${(1-d/150)*.22})`;hCtx.lineWidth=1;hCtx.stroke();}
+  }
+  hNodes.forEach(n=>{
+    n.x+=n.vx;n.y+=n.vy;
+    if(n.x<-20)n.x=hW+20;if(n.x>hW+20)n.x=-20;if(n.y<-20)n.y=hH+20;if(n.y>hH+20)n.y=-20;
+    hCtx.beginPath();hCtx.arc(n.x,n.y,n.r,0,Math.PI*2);hCtx.fillStyle=`rgba(124,58,237,${n.op})`;hCtx.fill();
+    hCtx.beginPath();hCtx.arc(n.x,n.y,n.r*3,0,Math.PI*2);hCtx.fillStyle=`rgba(124,58,237,${n.op*.12})`;hCtx.fill();
+  });
+  requestAnimationFrame(animHero);
+}
+animHero();
+
+// ── Demo canvas — small interactive-looking graph ─────
+const dc = document.getElementById('demo-canvas');
+const dCtx = dc.getContext('2d');
+let dNodes = [], dW, dH;
+const colors = ['#7c3aed','#a78bfa','#5b21b6','#8b5cf6','#6d28d9'];
+function resizeDemo() {
+  dW = dc.width = dc.parentElement.offsetWidth;
+  dH = dc.height = dc.parentElement.offsetHeight;
+}
+resizeDemo();
+window.addEventListener('resize', resizeDemo);
+// Create a structured cluster-looking graph
+const clusters = [
+  { cx: 0.25, cy: 0.35, count: 8, col: '#7c3aed' },
+  { cx: 0.65, cy: 0.3,  count: 6, col: '#5b21b6' },
+  { cx: 0.5,  cy: 0.7,  count: 7, col: '#a78bfa' },
+];
+clusters.forEach(cl => {
+  for (let i = 0; i < cl.count; i++) {
+    const angle = (i / cl.count) * Math.PI * 2;
+    const spread = 0.1 + Math.random() * 0.06;
+    dNodes.push({
+      x: (cl.cx + Math.cos(angle) * spread) * dW,
+      y: (cl.cy + Math.sin(angle) * spread) * dH,
+      vx: (Math.random()-.5)*.25, vy: (Math.random()-.5)*.25,
+      r: Math.random()*4+3,
+      col: cl.col,
+      op: Math.random()*.3+.7
+    });
+  }
+});
+// Bridge nodes
+dNodes.push({ x: 0.45*dW, y: 0.47*dH, vx:.1, vy:-.1, r:7, col:'#c4b5fd', op:.9 });
+dNodes.push({ x: 0.55*dW, y: 0.52*dH, vx:-.1, vy:.1, r:5, col:'#c4b5fd', op:.8 });
+
+function animDemo() {
+  dCtx.clearRect(0, 0, dW, dH);
+  for(let i=0;i<dNodes.length;i++) for(let j=i+1;j<dNodes.length;j++){
+    const dx=dNodes[i].x-dNodes[j].x, dy=dNodes[i].y-dNodes[j].y, d=Math.sqrt(dx*dx+dy*dy);
+    if(d<dW*0.18){
+      dCtx.beginPath();dCtx.moveTo(dNodes[i].x,dNodes[i].y);dCtx.lineTo(dNodes[j].x,dNodes[j].y);
+      dCtx.strokeStyle=`rgba(167,139,250,${(1-d/(dW*0.18))*.25})`;dCtx.lineWidth=1;dCtx.stroke();
+    }
+  }
+  dNodes.forEach(n=>{
+    n.x+=n.vx; n.y+=n.vy;
+    if(n.x<20||n.x>dW-20) n.vx*=-1;
+    if(n.y<20||n.y>dH-20) n.vy*=-1;
+    // Glow
+    const g = dCtx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r*3);
+    g.addColorStop(0, n.col + 'cc'); g.addColorStop(1, n.col + '00');
+    dCtx.beginPath();dCtx.arc(n.x,n.y,n.r*3,0,Math.PI*2);dCtx.fillStyle=g;dCtx.fill();
+    // Node
+    dCtx.beginPath();dCtx.arc(n.x,n.y,n.r,0,Math.PI*2);dCtx.fillStyle=n.col;dCtx.fill();
+  });
+  requestAnimationFrame(animDemo);
+}
+animDemo();
+
+// ── Scroll animations ──────────────────────────────────
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('visible');
+    if (e.target.id === 'feat-grid')
+      e.target.querySelectorAll('.feat-card').forEach((c,i) => setTimeout(()=>c.classList.add('visible'), i*120));
+    if (e.target.id === 'influence-visual')
+      setTimeout(()=>{ document.querySelectorAll('.inf-fill').forEach(f => f.style.width = f.dataset.v + '%'); }, 200);
+  });
+}, { threshold: 0.15 });
+
+['feat-grid','detail-1','detail-2','influence-visual'].forEach(id => {
+  const el = document.getElementById(id); if(el) io.observe(el);
+});
+
+const ssFrame = document.getElementById('ss-frame');
+const ssObs = new IntersectionObserver(entries => {
+  if(entries[0].isIntersecting) entries[0].target.classList.add('visible');
+}, { threshold: 0.1 });
+if(ssFrame) ssObs.observe(ssFrame);
+</script>
+<script async defer src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+</body>
+</html>

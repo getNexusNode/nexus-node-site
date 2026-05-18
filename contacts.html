@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contacts — NEXUS NODE</title>
+  <meta name="description" content="Every detail in one beautiful contact card. Photos, warmth score, birthdays, categories — all local." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Contacts — NEXUS NODE" />
+  <meta property="og:description" content="Every detail in one beautiful contact card. Photos, warmth score, birthdays, categories — all local, no cloud." />
+  <meta property="og:image" content="https://getnexusnode.github.io/nexus-node-site/assets/og-image.png" />
+  <meta property="og:url" content="https://getnexusnode.github.io/nexus-node-site/contacts.html" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/logo.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent:     #7c3aed;
+      --accent-lt:  #a78bfa;
+      --accent-dim: rgba(124,58,237,0.14);
+      --bg:         #08080f;
+      --bg-card:    #10101a;
+      --bg-card2:   #0d0d18;
+      --border:     rgba(124,58,237,0.25);
+      --border-lt:  rgba(255,255,255,0.06);
+      --text:       #ece9f8;
+      --text-mut:   #8a87aa;
+      --text-dim:   #4a4768;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Segoe UI','Helvetica Neue',system-ui,sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+    .progress-bar { position: fixed; top: 0; left: 0; z-index: 300; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-lt)); width: 0%; transition: width 0.1s linear; }
+
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; background: rgba(8,8,15,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-back { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .nav-back:hover { color: var(--accent-lt); }
+    .nav-sep { color: var(--text-dim); font-size: 13px; opacity: 0.4; }
+    .nav-current { font-size: 13px; font-weight: 700; color: var(--text-mut); }
+    .nav-logo { font-size: 15px; font-weight: 900; letter-spacing: 3px; color: var(--text); text-decoration: none; }
+    .nav-logo .hl { color: var(--accent-lt); }
+    .nav-buy { background: var(--accent); color: #fff; padding: 7px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; transition: background 0.2s, transform 0.15s; }
+    .nav-buy:hover { background: #6d28d9; transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 100px 24px 80px; position: relative; overflow: hidden; background: linear-gradient(180deg, #08060f 0%, var(--bg) 100%); }
+    #net-canvas { position: absolute; inset: 0; z-index: 0; opacity: 0.45; }
+    .hero::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 30%; background: linear-gradient(to top, var(--bg), transparent); z-index: 1; pointer-events: none; }
+    .hero-inner { position: relative; z-index: 2; max-width: 760px; }
+    .feat-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-dim); border: 1px solid var(--border); color: var(--accent-lt); font-size: 11px; font-weight: 700; letter-spacing: 2px; padding: 5px 16px; border-radius: 99px; margin-bottom: 28px; text-transform: uppercase; }
+    .hero-title { font-size: clamp(38px, 7vw, 80px); font-weight: 900; line-height: 1.05; letter-spacing: -2px; margin-bottom: 20px; }
+    .hero-title .grad { background: linear-gradient(135deg, #c4b5fd 0%, var(--accent) 60%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero-sub { font-size: clamp(15px,2vw,18px); color: var(--text-mut); max-width: 520px; margin: 0 auto 44px; line-height: 1.75; }
+    .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-p { background: linear-gradient(135deg,#7c3aed,#5b21b6); color:#fff; padding:14px 36px; border-radius:12px; font-size:15px; font-weight:800; text-decoration:none; box-shadow:0 10px 36px rgba(124,58,237,0.42); transition:transform 0.15s,box-shadow 0.15s; }
+    .btn-p:hover { transform:translateY(-2px); box-shadow:0 14px 44px rgba(124,58,237,0.58); }
+    .btn-s { background:transparent; color:var(--text-mut); padding:14px 26px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); font-size:15px; font-weight:600; text-decoration:none; transition:border-color 0.2s,color 0.2s; }
+    .btn-s:hover { border-color:var(--accent); color:var(--text); }
+
+    /* ── SCREENSHOT HERO ── */
+    .screenshot-hero { padding: 0 24px 80px; display: flex; justify-content: center; }
+    .win-frame-anim { width: 100%; max-width: 920px; opacity: 0; transform: translateY(40px); transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1); }
+    .win-frame-anim.visible { opacity: 1; transform: translateY(0); }
+
+    .win-frame { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 28px 72px rgba(0,0,0,0.55); background: var(--bg-card); }
+    .win-bar { height: 32px; background: #161622; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; }
+    .win-btns { display: flex; gap: 7px; }
+    .win-btn { width: 12px; height: 12px; border-radius: 50%; }
+    .win-btn:nth-child(1) { background: #ff5f57; }
+    .win-btn:nth-child(2) { background: #febc2e; }
+    .win-btn:nth-child(3) { background: #28c840; }
+    .win-title { font-size: 11px; color: #5a5878; letter-spacing: 0.5px; position: absolute; left: 50%; transform: translateX(-50%); }
+    .win-frame img { width: 100%; display: block; }
+    .img-placeholder { height: 340px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 13px; background: var(--bg-card2); }
+
+    .section-label { font-size: 10px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--accent-lt); margin-bottom: 12px; }
+    .section-title { font-size: clamp(28px,4vw,46px); font-weight: 900; line-height: 1.1; margin-bottom: 16px; }
+    .section-title .grad { background: linear-gradient(135deg, var(--accent-lt), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .section-sub { font-size: 16px; color: var(--text-mut); line-height: 1.7; max-width: 540px; }
+    .section-inner { max-width: 1080px; margin: 0 auto; }
+
+    /* ── FEAT GRID ── */
+    .feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 60px; }
+    @media(max-width:640px) { .feat-grid { grid-template-columns: 1fr; } }
+    .feat-card { background: var(--bg-card); border: 1px solid var(--border-lt); border-radius: 18px; padding: 32px; opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.2s; }
+    .feat-card.visible { opacity: 1; transform: translateY(0); }
+    .feat-card:hover { border-color: rgba(124,58,237,0.35); }
+    .feat-card-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; color: var(--accent-lt); margin-bottom: 18px; }
+    .feat-card h3 { font-size: 17px; font-weight: 800; margin-bottom: 10px; }
+    .feat-card p { font-size: 14px; color: var(--text-mut); line-height: 1.7; }
+
+    /* ── DETAIL ROW ── */
+    .detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding: 80px 24px; max-width: 1080px; margin: 0 auto; opacity: 0; transform: translateX(40px); transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1); }
+    .detail-row.from-left { transform: translateX(-40px); }
+    .detail-row.visible { opacity: 1; transform: translateX(0); }
+    @media(max-width:720px) { .detail-row { grid-template-columns: 1fr; gap: 40px; } }
+    .detail-text .label { font-size: 10px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--accent-lt); margin-bottom: 12px; }
+    .detail-text h2 { font-size: clamp(22px,3.2vw,34px); font-weight: 900; margin-bottom: 14px; line-height: 1.2; }
+    .detail-text h2 .grad { background: linear-gradient(135deg, var(--accent-lt), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .detail-text p { font-size: 15px; color: var(--text-mut); line-height: 1.75; margin-bottom: 20px; }
+    .detail-list { list-style: none; }
+    .detail-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; color: var(--text-mut); padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .detail-list li:last-child { border-bottom: none; }
+    .ic { color: var(--accent-lt); flex-shrink: 0; margin-top: 1px; display: flex; }
+    .divider { height: 1px; background: var(--border-lt); max-width: 1080px; margin: 0 auto; }
+
+    /* ── WARMTH VISUAL ── */
+    .warmth-visual { background: var(--bg-card); border: 1px solid var(--border-lt); border-radius: 18px; padding: 28px; }
+    .warmth-bar-wrap { margin-top: 20px; }
+    .warmth-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .warmth-name { font-size: 13px; color: var(--text-mut); width: 80px; flex-shrink: 0; }
+    .warmth-track { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+    .warmth-fill { height: 100%; border-radius: 3px; transition: width 1.2s cubic-bezier(0.16,1,0.3,1); width: 0%; }
+    .warmth-fill.hot  { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+    .warmth-fill.warm { background: linear-gradient(90deg, #5b21b6, #7c3aed); }
+    .warmth-fill.cool { background: linear-gradient(90deg, #2e1065, #4c1d95); }
+    .warmth-fill.cold { background: linear-gradient(90deg, #1e1a2e, #2e2550); }
+    .warmth-val { font-size: 12px; color: var(--text-dim); width: 30px; text-align: right; }
+
+    /* ── IMPORT STEPS ── */
+    .import-steps { display: flex; flex-direction: column; gap: 16px; }
+    .import-step { display: flex; gap: 16px; align-items: flex-start; opacity: 0; transform: translateX(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .import-step.visible { opacity: 1; transform: translateX(0); }
+    .step-num { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #5b21b6); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: #fff; flex-shrink: 0; }
+    .step-text h4 { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+    .step-text p { font-size: 13px; color: var(--text-mut); line-height: 1.6; }
+
+    /* ── RELATED ── */
+    .related { padding: 80px 24px; max-width: 1080px; margin: 0 auto; }
+    .related-title { font-size: 12px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 28px; }
+    .related-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:580px) { .related-grid { grid-template-columns: 1fr; } }
+    .related-card { background: var(--bg-card); border: 1px solid var(--border-lt); border-radius: 16px; padding: 24px 28px; text-decoration: none; color: var(--text); display: flex; align-items: center; justify-content: space-between; transition: border-color 0.2s, transform 0.15s; }
+    .related-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .related-card-left { display: flex; align-items: center; gap: 16px; }
+    .related-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; color: var(--accent-lt); flex-shrink: 0; }
+    .related-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 3px; }
+    .related-card p { font-size: 12px; color: var(--text-mut); }
+    .related-arrow { color: var(--text-dim); font-size: 18px; }
+
+    .cta-section { background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(124,58,237,0.18) 0%, transparent 70%); padding: 100px 24px; text-align: center; }
+    .cta-inner { max-width: 580px; margin: 0 auto; }
+    .cta-label { font-size: 10px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--accent-lt); margin-bottom: 16px; }
+    .cta-title { font-size: clamp(28px,4.5vw,48px); font-weight: 900; margin-bottom: 14px; line-height: 1.1; }
+    .cta-sub { font-size: 15px; color: var(--text-mut); margin-bottom: 36px; line-height: 1.7; }
+    .cta-note { font-size: 12px; color: var(--text-dim); margin-top: 14px; }
+
+    footer { background: #050508; border-top: 1px solid rgba(255,255,255,0.04); padding: 28px 24px; text-align: center; }
+    .footer-logo { font-size: 13px; font-weight: 900; letter-spacing: 4px; color: var(--text-dim); margin-bottom: 12px; }
+    .footer-links { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .footer-links a { font-size: 12px; color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--accent-lt); }
+    .footer-copy { font-size: 11px; color: #1e1c30; }
+  </style>
+</head>
+<body>
+
+<div class="progress-bar" id="pbar"></div>
+
+<nav>
+  <div class="nav-left">
+    <a class="nav-back" href="index.html">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <a class="nav-logo" href="index.html">NEXUS <span class="hl">NODE</span></a>
+    </a>
+    <span class="nav-sep">/</span>
+    <span class="nav-current">Contacts</span>
+  </div>
+  <a class="nav-buy" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <canvas id="net-canvas"></canvas>
+  <div class="hero-inner">
+    <div class="feat-badge">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Contacts
+    </div>
+    <h1 class="hero-title">Every detail.<br><span class="grad">One clean card.</span></h1>
+    <p class="hero-sub">Photos, warmth scores, birthdays, categories, social links — everything about a person, organized beautifully. Find anyone in seconds.</p>
+    <div class="hero-cta">
+      <a class="btn-p" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99</a>
+      <a class="btn-s" href="index.html">← Back to overview</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── MAIN SCREENSHOT ── -->
+<div class="screenshot-hero">
+  <div class="win-frame win-frame-anim" id="ss-frame">
+    <div class="win-bar">
+      <div class="win-btns"><div class="win-btn"></div><div class="win-btn"></div><div class="win-btn"></div></div>
+      <span class="win-title">NEXUS NODE — Contacts</span>
+      <div style="width:44px"></div>
+    </div>
+    <img src="assets/screenshot-contacts.png" alt="Contacts" onerror="this.outerHTML='<div class=img-placeholder>screenshot-contacts.png</div>'" />
+  </div>
+</div>
+
+<!-- ── FEATURE GRID ── -->
+<section style="background:var(--bg-card);padding:80px 24px;">
+  <div class="section-inner">
+    <div>
+      <div class="section-label">Contact Cards</div>
+      <h2 class="section-title">Everything about a person,<br><span class="grad">in one place.</span></h2>
+      <p class="section-sub">A contact card in NEXUS NODE holds far more than a name and number.</p>
+    </div>
+    <div class="feat-grid" id="feat-grid">
+      <div class="feat-card">
+        <div class="feat-card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="8" r="4" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="3" width="16" height="14" rx="2.5" stroke="currentColor" stroke-width="1.3" opacity=".4"/></svg>
+        </div>
+        <h3>Photos & Avatars</h3>
+        <p>Add a real photo to any contact. No photo? NEXUS NODE generates a beautiful color avatar from their initials — every card looks great automatically.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3c-.7 1.4-2.5 3.5-2.5 5.5 0 1.4 1.1 2.5 2.5 2.5s2.5-1.1 2.5-2.5C12.5 6.5 10.7 4.4 10 3z" fill="currentColor"/><path d="M5.5 14c-.5.5-.5 2 0 3h9c.5-1 .5-2.5 0-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Warmth Score</h3>
+        <p>Track how "warm" each relationship is. The score drops automatically when you haven't been in touch — so you always know who's going cold before it's too late.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M7 4V2M13 4V2M3 9h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Birthday Reminders</h3>
+        <p>Never forget a birthday again. Add birth dates to contacts and get a clear upcoming-birthdays view sorted by how soon they are.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10l4-7h9l3 7-3 7H7L3 10z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="11" cy="10" r="1.5" fill="currentColor"/></svg>
+        </div>
+        <h3>Categories & Priorities</h3>
+        <p>Organize contacts into custom categories — Family, Work, Investors, Friends. Assign a priority level so important contacts always surface at the top.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WARMTH SCORE DETAIL ── -->
+<div class="divider"></div>
+<div class="detail-row" id="detail-1">
+  <div class="detail-text">
+    <div class="label">Warmth Score</div>
+    <h2>Know who's<br><span class="grad">going cold.</span></h2>
+    <p>Every contact has a warmth score that reflects how recently and how often you've been in touch. It fades over time — a quiet reminder to reach out before the connection goes cold.</p>
+    <ul class="detail-list">
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Visual color-coded warmth indicator per card</li>
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Filter contacts by warmth level</li>
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Update score manually when you reconnect</li>
+      <li><span class="ic"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Reflected in network graph node intensity</li>
+    </ul>
+  </div>
+  <div class="warmth-visual" id="warmth-visual">
+    <div style="font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Warmth Overview</div>
+    <div style="font-size:13px;color:var(--text-mut);margin-bottom:20px;">Sorted by relationship temperature</div>
+    <div class="warmth-bar-wrap" id="warmth-bars">
+      <div class="warmth-row"><span class="warmth-name">Sarah K.</span><div class="warmth-track"><div class="warmth-fill hot" data-w="88"></div></div><span class="warmth-val">88</span></div>
+      <div class="warmth-row"><span class="warmth-name">Tom R.</span><div class="warmth-track"><div class="warmth-fill hot" data-w="75"></div></div><span class="warmth-val">75</span></div>
+      <div class="warmth-row"><span class="warmth-name">Alex M.</span><div class="warmth-track"><div class="warmth-fill warm" data-w="52"></div></div><span class="warmth-val">52</span></div>
+      <div class="warmth-row"><span class="warmth-name">Jana P.</span><div class="warmth-track"><div class="warmth-fill cool" data-w="31"></div></div><span class="warmth-val">31</span></div>
+      <div class="warmth-row"><span class="warmth-name">Mark D.</span><div class="warmth-track"><div class="warmth-fill cold" data-w="12"></div></div><span class="warmth-val">12</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ── IMPORT DETAIL ── -->
+<div class="detail-row from-left" id="detail-2">
+  <div class="win-frame">
+    <div class="win-bar">
+      <div class="win-btns"><div class="win-btn"></div><div class="win-btn"></div><div class="win-btn"></div></div>
+      <span class="win-title">Contacts — Import</span>
+      <div style="width:44px"></div>
+    </div>
+    <img src="assets/screenshot-import.png" alt="Import" onerror="this.outerHTML='<div class=img-placeholder>screenshot-import.png</div>'" />
+  </div>
+  <div class="detail-text">
+    <div class="label">Google Contacts Import</div>
+    <h2>Your existing contacts,<br><span class="grad">in one click.</span></h2>
+    <p>Already have hundreds of contacts in Google? Import them all via vCard export. Names, emails, phones, addresses — everything lands in NEXUS NODE automatically.</p>
+    <div class="import-steps" id="import-steps">
+      <div class="import-step">
+        <div class="step-num">1</div>
+        <div class="step-text"><h4>Export from Google</h4><p>Go to Google Contacts → Export → select vCard (.vcf) format → download the file.</p></div>
+      </div>
+      <div class="import-step">
+        <div class="step-num">2</div>
+        <div class="step-text"><h4>Import into NEXUS NODE</h4><p>Open NEXUS NODE → Contacts → Import → select your .vcf file → done.</p></div>
+      </div>
+      <div class="import-step">
+        <div class="step-num">3</div>
+        <div class="step-text"><h4>All data lands automatically</h4><p>Every contact appears with their full info. Enrich with photos, categories and warmth scores from there.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ── RELATED ── -->
+<div class="related">
+  <div class="related-title">Explore other features</div>
+  <div class="related-grid">
+    <a class="related-card" href="world-map.html">
+      <div class="related-card-left">
+        <div class="related-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.4"/><path d="M10 2c-2 2.5-3 5-3 8s1 5.5 3 8M10 2c2 2.5 3 5 3 8s-1 5.5-3 8M2 10h16" stroke="currentColor" stroke-width="1.3"/></svg>
+        </div>
+        <div>
+          <h3>World Map</h3>
+          <p>See where your network lives</p>
+        </div>
+      </div>
+      <span class="related-arrow">›</span>
+    </a>
+    <a class="related-card" href="network.html">
+      <div class="related-card-left">
+        <div class="related-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="3" fill="currentColor"/><circle cx="3" cy="4" r="2" fill="currentColor"/><circle cx="17" cy="4" r="2" fill="currentColor"/><circle cx="3" cy="16" r="2" fill="currentColor"/><circle cx="17" cy="16" r="2" fill="currentColor"/><path d="M5 5.5L8 8M12 12l3 3M15 5.5L12 8M5 14.5L8 12" stroke="currentColor" stroke-width="1.3"/></svg>
+        </div>
+        <div>
+          <h3>Network Graph</h3>
+          <p>Visualize all relationships at once</p>
+        </div>
+      </div>
+      <span class="related-arrow">›</span>
+    </a>
+  </div>
+</div>
+
+<!-- ── CTA ── -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <div class="cta-label">Ready to start?</div>
+    <h2 class="cta-title">Build your contact cards today.</h2>
+    <p class="cta-sub">One-time €8.99. No subscription. All data stays on your device — always.</p>
+    <a class="btn-p" href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Get PRO — €8.99 →</a>
+    <p class="cta-note">One-time payment · Windows 10/11 · Mac coming in v1.2</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">NEXUS NODE</div>
+  <div class="footer-links">
+    <a href="index.html">Overview</a>
+    <a href="world-map.html">World Map</a>
+    <a href="network.html">Network Graph</a>
+    <a href="contacts.html">Contacts</a>
+    <a href="https://nexusnode.gumroad.com/l/nexusnode" target="_blank">Buy on Gumroad</a>
+    <a href="mailto:nexusnode.contact@gmail.com">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 NEXUS NODE · All rights reserved</div>
+</footer>
+
+<script>
+window.addEventListener('scroll', () => {
+  const s = document.documentElement.scrollTop;
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  document.getElementById('pbar').style.width = (s / h * 100) + '%';
+});
+
+// ── Network canvas ──────────────────────────────────────
+const canvas = document.getElementById('net-canvas');
+const ctx = canvas.getContext('2d');
+let nodes = [], W, H;
+function resizeCanvas() {
+  W = canvas.width = canvas.parentElement.offsetWidth;
+  H = canvas.height = canvas.parentElement.offsetHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+for (let i = 0; i < 32; i++) nodes.push({ x: Math.random()*W, y: Math.random()*H, vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3, r:Math.random()*2.2+1.2, op:Math.random()*.4+.2 });
+function animNet() {
+  ctx.clearRect(0,0,W,H);
+  for (let i=0;i<nodes.length;i++) for (let j=i+1;j<nodes.length;j++) {
+    const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.sqrt(dx*dx+dy*dy);
+    if(d<130){ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);ctx.strokeStyle=`rgba(167,139,250,${(1-d/130)*.15})`;ctx.lineWidth=1;ctx.stroke();}
+  }
+  nodes.forEach(n=>{n.x+=n.vx;n.y+=n.vy;if(n.x<-20)n.x=W+20;if(n.x>W+20)n.x=-20;if(n.y<-20)n.y=H+20;if(n.y>H+20)n.y=-20;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle=`rgba(124,58,237,${n.op})`;ctx.fill();});
+  requestAnimationFrame(animNet);
+}
+animNet();
+
+// ── Scroll animations ──────────────────────────────────
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    if (e.target.id === 'feat-grid') {
+      e.target.querySelectorAll('.feat-card').forEach((c,i) => setTimeout(()=>c.classList.add('visible'), i*120));
+    }
+    if (e.target.id === 'warmth-visual') {
+      setTimeout(() => {
+        document.querySelectorAll('.warmth-fill').forEach(f => {
+          f.style.width = f.dataset.w + '%';
+        });
+      }, 200);
+    }
+    if (e.target.id === 'import-steps') {
+      e.target.querySelectorAll('.import-step').forEach((s,i) => setTimeout(()=>s.classList.add('visible'), i*150));
+    }
+    e.target.classList.add('visible');
+  });
+}, { threshold: 0.15 });
+
+['feat-grid','detail-1','detail-2','warmth-visual','import-steps'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) io.observe(el);
+});
+
+const ssFrame = document.getElementById('ss-frame');
+const ssObs = new IntersectionObserver(entries => {
+  if(entries[0].isIntersecting) entries[0].target.classList.add('visible');
+}, { threshold: 0.1 });
+if(ssFrame) ssObs.observe(ssFrame);
+</script>
+<script async defer src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+</body>
+</html>
