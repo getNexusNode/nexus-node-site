@@ -398,8 +398,33 @@ clusters.forEach(cl => {
 dNodes.push({ x: 0.45*dW, y: 0.47*dH, vx:.1, vy:-.1, r:7, col:'#c4b5fd', op:.9 });
 dNodes.push({ x: 0.55*dW, y: 0.52*dH, vx:-.1, vy:.1, r:5, col:'#c4b5fd', op:.8 });
 
-function animDemo() {
+// ── Drag demo ──────────────────────────────────────────
+const dragIdx = dNodes.length - 2; // first bridge node
+let ghostX = 0.7*dW, ghostY = 0.25*dH;
+let dragState = 'dragging', dragStart = performance.now(), waitStart = 0;
+const DRAG_DUR = 2400, WAIT_DUR = 1000;
+function pickGhost() {
+  ghostX = (0.12 + Math.random()*0.76) * dW;
+  ghostY = (0.10 + Math.random()*0.70) * dH;
+}
+
+function animDemo(ts) {
   dCtx.clearRect(0, 0, dW, dH);
+  const dn = dNodes[dragIdx];
+
+  // ── Drag state machine ──
+  if (dragState === 'dragging') {
+    dn.x += (ghostX - dn.x) * 0.02;
+    dn.y += (ghostY - dn.y) * 0.02;
+    const dx = dn.x - ghostX, dy = dn.y - ghostY;
+    if (Math.sqrt(dx*dx+dy*dy) < 4 || ts - dragStart > DRAG_DUR) {
+      dragState = 'waiting'; waitStart = ts;
+    }
+  } else {
+    if (ts - waitStart > WAIT_DUR) { pickGhost(); dragState = 'dragging'; dragStart = ts; }
+  }
+
+  // ── Edges ──
   for(let i=0;i<dNodes.length;i++) for(let j=i+1;j<dNodes.length;j++){
     const dx=dNodes[i].x-dNodes[j].x, dy=dNodes[i].y-dNodes[j].y, d=Math.sqrt(dx*dx+dy*dy);
     if(d<dW*0.18){
@@ -407,20 +432,29 @@ function animDemo() {
       dCtx.strokeStyle=`rgba(167,139,250,${(1-d/(dW*0.18))*.25})`;dCtx.lineWidth=1;dCtx.stroke();
     }
   }
-  dNodes.forEach(n=>{
-    n.x+=n.vx; n.y+=n.vy;
-    if(n.x<20||n.x>dW-20) n.vx*=-1;
-    if(n.y<20||n.y>dH-20) n.vy*=-1;
-    // Glow
+
+  // ── Ghost target ──
+  if (dragState === 'dragging') {
+    const gg = dCtx.createRadialGradient(ghostX,ghostY,0,ghostX,ghostY,dn.r*4);
+    gg.addColorStop(0,'rgba(196,181,253,0.18)'); gg.addColorStop(1,'rgba(196,181,253,0)');
+    dCtx.beginPath(); dCtx.arc(ghostX,ghostY,dn.r*4,0,Math.PI*2); dCtx.fillStyle=gg; dCtx.fill();
+    dCtx.beginPath(); dCtx.arc(ghostX,ghostY,dn.r,0,Math.PI*2);
+    dCtx.strokeStyle='rgba(196,181,253,0.38)'; dCtx.lineWidth=1.5;
+    dCtx.setLineDash([3,3]); dCtx.stroke(); dCtx.setLineDash([]);
+  }
+
+  // ── Nodes ──
+  dNodes.forEach((n,i)=>{
+    if(i !== dragIdx){ n.x+=n.vx; n.y+=n.vy; if(n.x<20||n.x>dW-20)n.vx*=-1; if(n.y<20||n.y>dH-20)n.vy*=-1; }
     const g = dCtx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r*3);
-    g.addColorStop(0, n.col + 'cc'); g.addColorStop(1, n.col + '00');
+    g.addColorStop(0,n.col+'cc'); g.addColorStop(1,n.col+'00');
     dCtx.beginPath();dCtx.arc(n.x,n.y,n.r*3,0,Math.PI*2);dCtx.fillStyle=g;dCtx.fill();
-    // Node
     dCtx.beginPath();dCtx.arc(n.x,n.y,n.r,0,Math.PI*2);dCtx.fillStyle=n.col;dCtx.fill();
   });
+
   requestAnimationFrame(animDemo);
 }
-animDemo();
+animDemo(performance.now());
 
 // ── Scroll animations ──────────────────────────────────
 const io = new IntersectionObserver((entries) => {

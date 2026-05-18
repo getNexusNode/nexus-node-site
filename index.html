@@ -565,7 +565,7 @@
     <div class="pc pro">
       <div class="pro-badge" data-en="Launch Price" data-de="Einführungspreis">Launch Price</div>
       <div class="pc-tier">PRO</div>
-      <div class="pc-price"><sup>€</sup>8.99 <span class="old">€12.99</span></div>
+      <div class="pc-price"><sup>€</sup><span id="price-anim">12.99</span> <span class="old" id="price-old" style="opacity:0;transition:opacity 0.5s 0.2s">€12.99</span></div>
       <div class="pc-note" data-en="Regular price June 1st · <b>Save 30%</b>" data-de="Regulärer Preis ab 1. Juni · <b>30% sparen</b>">Regular price June 1st · <b>Save 30%</b></div>
       <ul class="pc-list">
         <li><span class="ck">✓</span> <span data-en="Unlimited contacts" data-de="Unbegrenzte Kontakte">Unlimited contacts</span></li>
@@ -695,6 +695,20 @@ const io = new IntersectionObserver((entries) => {
     if (e.target.classList.contains('panel-price') && e.isIntersecting) {
       const pw = document.getElementById('pwrap');
       if (pw) pw.classList.add('visible');
+      const pEl = document.getElementById('price-anim');
+      const pOld = document.getElementById('price-old');
+      if (pEl && !pEl.dataset.animated) {
+        pEl.dataset.animated = '1';
+        const t0 = performance.now();
+        const tick = (now) => {
+          const prog = Math.min((now - t0) / 950, 1);
+          const ease = 1 - Math.pow(1 - prog, 3);
+          pEl.textContent = (12.99 + (8.99 - 12.99) * ease).toFixed(2);
+          if (prog < 1) requestAnimationFrame(tick);
+          else if (pOld) pOld.style.opacity = '1';
+        };
+        requestAnimationFrame(tick);
+      }
     }
   });
 }, { threshold: 0.22 });
